@@ -37,6 +37,7 @@ import javax.swing.ComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JToggleButton;
 import com.eljavatar.swingutils.core.annotations.ToggleButtonView;
+import java.text.ParsePosition;
 
 /**
  *
@@ -370,22 +371,23 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
             } else if (typeFieldModel == Character.class || typeFieldModel == char.class) {
                 fieldModel.set(objectModelBean, getTextFromComponent(jTextComponent).charAt(0));
             } else if (Number.class.isAssignableFrom(typeFieldModel)) {
+                // https://www.ibm.com/developerworks/library/j-numberformat/index.html
                 DecimalFormat decimalFormat = null;
                 if (pattern != null && !pattern.isEmpty()) {
                     decimalFormat = new DecimalFormat(pattern);
                 }
                 if (typeFieldModel == Byte.class || typeFieldModel == byte.class) {
-                    fieldModel.set(objectModelBean, decimalFormat != null ? (Byte) decimalFormat.parse(getTextFromComponent(jTextComponent)) : Byte.parseByte(getTextFromComponent(jTextComponent)));
+                    fieldModel.set(objectModelBean, decimalFormat != null ? Byte.parseByte(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Byte.parseByte(getTextFromComponent(jTextComponent)));
                 } else if (typeFieldModel == Short.class || typeFieldModel == short.class) {
-                    fieldModel.set(objectModelBean, decimalFormat != null ? (Short) decimalFormat.parse(getTextFromComponent(jTextComponent)) : Short.parseShort(getTextFromComponent(jTextComponent)));
+                    fieldModel.set(objectModelBean, decimalFormat != null ? Short.parseShort(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Short.parseShort(getTextFromComponent(jTextComponent)));
                 } else if (typeFieldModel == Integer.class || typeFieldModel == int.class) {
-                    fieldModel.set(objectModelBean, decimalFormat != null ? (Integer) decimalFormat.parse(getTextFromComponent(jTextComponent)) : Integer.parseInt(getTextFromComponent(jTextComponent)));
+                    fieldModel.set(objectModelBean, decimalFormat != null ? Integer.parseInt(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Integer.parseInt(getTextFromComponent(jTextComponent)));
                 } else if (typeFieldModel == Long.class || typeFieldModel == long.class) {
-                    fieldModel.set(objectModelBean, decimalFormat != null ? (Long) decimalFormat.parse(getTextFromComponent(jTextComponent)) : Long.parseLong(getTextFromComponent(jTextComponent)));
+                    fieldModel.set(objectModelBean, decimalFormat != null ? Long.parseLong(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Long.parseLong(getTextFromComponent(jTextComponent)));
                 } else if (typeFieldModel == Float.class || typeFieldModel == float.class) {
-                    fieldModel.set(objectModelBean, decimalFormat != null ? (Float) decimalFormat.parse(getTextFromComponent(jTextComponent)) : Float.parseFloat(getTextFromComponent(jTextComponent)));
+                    fieldModel.set(objectModelBean, decimalFormat != null ? Float.parseFloat(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Float.parseFloat(getTextFromComponent(jTextComponent)));
                 } else if (typeFieldModel == Double.class || typeFieldModel == double.class) {
-                    fieldModel.set(objectModelBean, decimalFormat != null ? (Double) decimalFormat.parse(getTextFromComponent(jTextComponent)) : Double.parseDouble(getTextFromComponent(jTextComponent)));
+                    fieldModel.set(objectModelBean, decimalFormat != null ? Double.parseDouble(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Double.parseDouble(getTextFromComponent(jTextComponent)));
                 } else if (typeFieldModel == BigInteger.class) {
                     if (decimalFormat != null) {
                         decimalFormat.setParseBigDecimal(true);
@@ -401,8 +403,6 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                     } else {
                         fieldModel.set(objectModelBean, new BigDecimal(getTextFromComponent(jTextComponent)));
                     }
-                } else {
-                    System.out.println("Objeto numerico desconocido");
                 }
             } else if (typeFieldModel == Boolean.class || typeFieldModel == boolean.class) {
                 fieldModel.set(objectModelBean, Boolean.parseBoolean(getTextFromComponent(jTextComponent)));
