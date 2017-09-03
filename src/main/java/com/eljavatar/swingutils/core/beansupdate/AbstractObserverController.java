@@ -30,6 +30,8 @@ import javax.swing.JTextPane;
 import javax.swing.text.JTextComponent;
 import com.eljavatar.swingutils.core.annotations.DateTextView;
 import com.eljavatar.swingutils.core.annotations.NumberTextView;
+import com.eljavatar.swingutils.core.annotations.PropertyController;
+import com.eljavatar.swingutils.core.annotations.TableView;
 import java.text.DecimalFormat;
 import java.util.Iterator;
 import java.util.List;
@@ -37,7 +39,8 @@ import javax.swing.ComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JToggleButton;
 import com.eljavatar.swingutils.core.annotations.ToggleButtonView;
-import java.text.ParsePosition;
+import com.eljavatar.swingutils.core.modelcomponents.TableModelGeneric;
+import javax.swing.JTable;
 
 /**
  *
@@ -89,13 +92,41 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
     }
     
     
+    private boolean presentAnnotationController(Field fieldController) {
+        return (fieldController.isAnnotationPresent(ModelBean.class)
+                || fieldController.isAnnotationPresent(PropertyController.class));
+    }
     
-    private boolean presentAnnotation(Field fieldView) {
+    private String getNameAnnotationComponentController(Field fieldController) throws IllegalArgumentException {
+        ModelBean annotationModelBean = fieldController.getAnnotation(ModelBean.class);
+        PropertyController annotationPropertyController = fieldController.getAnnotation(PropertyController.class);
+        
+        String nameComponentController = null;
+        int count = 0;
+        
+        if (annotationModelBean != null && annotationModelBean instanceof ModelBean) {
+            nameComponentController = !annotationModelBean.name().trim().isEmpty() ? annotationModelBean.name().trim() : fieldController.getName();
+            count++;
+        }
+        if (annotationPropertyController != null && annotationPropertyController instanceof PropertyController) {
+            nameComponentController = !annotationPropertyController.name().trim().isEmpty() ? annotationPropertyController.name().trim() : fieldController.getName();
+            count++;
+        }
+        
+        if (count > 1) {
+            throw new IllegalArgumentException("El atributo " + fieldController.getName() + " tiene mas de una anotacion");
+        }
+        
+        return nameComponentController;
+    }
+    
+    private boolean presentAnnotationView(Field fieldView) {
         return (fieldView.isAnnotationPresent(TextView.class)
                 || fieldView.isAnnotationPresent(DateTextView.class)
                 || fieldView.isAnnotationPresent(NumberTextView.class)
                 || fieldView.isAnnotationPresent(ToggleButtonView.class)
                 || fieldView.isAnnotationPresent(ComboBoxView.class)
+                || fieldView.isAnnotationPresent(TableView.class)
                 || fieldView.isAnnotationPresent(ComponentView.class));
     }
     
@@ -105,6 +136,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         NumberTextView annotationNumberTextView = fieldView.getAnnotation(NumberTextView.class);
         ToggleButtonView annotationCheckBoxView = fieldView.getAnnotation(ToggleButtonView.class);
         ComboBoxView annotationComboBoxView = fieldView.getAnnotation(ComboBoxView.class);
+        TableView annotationTableView = fieldView.getAnnotation(TableView.class);
         ComponentView annotationComponentView = fieldView.getAnnotation(ComponentView.class);
 
         String nameComponentView = null;
@@ -130,6 +162,10 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
             nameComponentView = annotationComboBoxView.name();
             count++;
         }
+        if (annotationTableView != null && annotationTableView instanceof TableView) {
+            nameComponentView = annotationTableView.name();
+            count++;
+        }
         if (annotationComponentView != null && annotationComponentView instanceof ComponentView) {
             nameComponentView = annotationComponentView.name();
             count++;
@@ -142,20 +178,73 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         return nameComponentView;
     }
     
-    public void actualizar(C controller, V view, TipoUpdateEnum tipoUpdateEnum, String component, List<String> listComponents) {
+    
+    
+    private boolean isValidNamesComponentView(List<String> listComponentsToUpdate, String nameComponentToUpdate, String[] valuesComponentToUpdate, String componentViewNameModel, String componentViewNameField, String nameComponentView, boolean isModelBean) {
+        // Si tenemos un componente a actualizar, y es solo el nombre del modelo, lo comparamos con el nombre del componente en la Anotacion
+        if (isModelBean && valuesComponentToUpdate != null && valuesComponentToUpdate.length == 1 && !Objects.equals(componentViewNameModel, valuesComponentToUpdate[0])) {
+            return false;
+        }
+        // Si tenemos un componente a actualizar, y es modelo.atributo, lo comparamos con el nombre del atributo en la Anotacion
+        // Solo comparamos que el nombre del atributo corresponda con el de la anotacion
+        if (isModelBean && valuesComponentToUpdate != null && valuesComponentToUpdate.length == 2 && !Objects.equals(componentViewNameField, valuesComponentToUpdate[1])) {
+            return false;
+        }
+        // Si tenemos un componente a actualizar y no es de tipo modelo en el controlador, 
+        // lo comparamos con el nombre del componente en la vista
+        if (!isModelBean && nameComponentToUpdate != null && !Objects.equals(nameComponentView, nameComponentToUpdate)) {
+            return false;
+        }
+
+        // Si tenemos una lista de componentes a actualizar hacemos las mismas validaciones
+        if (listComponentsToUpdate != null) {
+            Iterator<String> itr = listComponentsToUpdate.iterator();
+            boolean coincide = false;
+            while (itr.hasNext()) {
+                String componentToUpdateIntoList = itr.next();
+
+                String[] valuesComponentToUpdateIntoList = componentToUpdateIntoList != null ? componentToUpdateIntoList.split("\\.") : null;
+
+                if (isModelBean && valuesComponentToUpdateIntoList != null && valuesComponentToUpdateIntoList.length > 2) {
+                    throw new IllegalArgumentException("El nombre de los Componentes a actualizar debe ser: model.atributo ó model");
+                }
+
+                if (isModelBean && valuesComponentToUpdateIntoList != null && valuesComponentToUpdateIntoList.length == 1 && Objects.equals(componentViewNameModel, valuesComponentToUpdateIntoList[0])) {
+                    coincide = true;
+                    break;
+                }
+                if (isModelBean && valuesComponentToUpdateIntoList != null && valuesComponentToUpdateIntoList.length == 2 && Objects.equals(componentViewNameField, valuesComponentToUpdateIntoList[1])) {
+                    coincide = true;
+                    break;
+                }
+                if (!isModelBean && componentToUpdateIntoList != null && Objects.equals(nameComponentView, componentToUpdateIntoList)) {
+                    coincide = true;
+                    break;
+                }
+            }
+            if (!coincide) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    public void actualizar(C controller, V view, TipoUpdateEnum tipoUpdateEnum, String componentToUpdate, List<String> listComponentsToUpdate) {
         
         Class classController = controller.getClass();
         Class classView = view.getClass();
         
+        // Obtenemos los Field del Controlador
         Field[] fieldsController = classController.getDeclaredFields();
+        // Obtenemos los Field de la vista
         Field[] fieldsView = classView.getDeclaredFields();
         
+        // Recorremos cada Field de la vista
         for (Field fieldView : fieldsView) {
             fieldView.setAccessible(true);
-            Class typeComponentView = fieldView.getType();
+            Class typeFieldView = fieldView.getType();
             
-            
-            if (presentAnnotation(fieldView)) {
+            if (presentAnnotationView(fieldView)) {
 
                 String nameComponentView = null;
                 try {
@@ -164,156 +253,99 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                     throw e;
                 }
                 
-                String[] values = nameComponentView.split("\\.");
-                String[] valuesComponent = component != null ? component.split("\\.") : null;
-                
-                if (values.length != 2) {
-                    throw new IllegalArgumentException("El nombre del Componente debe ser: model.atributo");
-                }
-                if (valuesComponent != null && valuesComponent.length > 2) {
-                    throw new IllegalArgumentException("El nombre del Componente a actualizar debe ser: model.atributo ó model");
-                }
-                
-                String textViewNameModel = values[0];
-                String textViewNameField = values[1];
-                
-                if (valuesComponent != null && valuesComponent.length == 1 && !Objects.equals(textViewNameModel, valuesComponent[0])) {
-                    continue;
-                }
-                if (valuesComponent != null && valuesComponent.length == 2 && !Objects.equals(textViewNameField, valuesComponent[1])) {
-                    continue;
-                }
-                
-                if (listComponents != null) {
-                    Iterator<String> itr = listComponents.iterator();
-                    boolean coincide = false;
-                    while (itr.hasNext()) {
-                        String comp = itr.next();
-                        
-                        String[] valuesComp = comp != null ? comp.split("\\.") : null;
-                        
-                        if (valuesComp != null && valuesComp.length > 2) {
-                            throw new IllegalArgumentException("El nombre de los Componentes a actualizar debe ser: model.atributo ó model");
-                        }
-                        
-                        if (valuesComp != null && valuesComp.length == 1 && Objects.equals(textViewNameModel, valuesComp[0])) {
-                            coincide = true;
-                            break;
-                        }
-                        if (valuesComp != null && valuesComp.length == 2 && Objects.equals(textViewNameField, valuesComp[1])) {
-                            coincide = true;
-                            break;
-                        }
-                    }
-                    if (!coincide) {
-                        continue;
-                    }
-                }
-                
-                
+                // Recorremos cada Field del controlador por cada Field de la vista
                 for (Field fieldController : fieldsController) {
                     fieldController.setAccessible(true);
-                    String nameController = fieldController.getName();
-                    //Class typeController = fieldController.getType();
+                    String nameFieldController = fieldController.getName();
+                    Class typeFieldController = fieldController.getType();
+
+                    String nameComponentController = null;
+                    try {
+                        nameComponentController = getNameAnnotationComponentController(fieldController);
+                    } catch (IllegalArgumentException e) {
+                        throw e;
+                    }
                     
-                    ModelBean annotationModelBean = fieldController.getAnnotation(ModelBean.class);
                     
-                    
-                    if (annotationModelBean != null && annotationModelBean instanceof ModelBean) {
-                        String nameModelBean = !annotationModelBean.name().trim().isEmpty() ? annotationModelBean.name().trim() : nameController;
+                    if (fieldController.isAnnotationPresent(PropertyController.class)) {
+                        // Validamos  en caso que haya una lista de componentes a actualizar
+                        // Si se especifican los componentes a actualizar y uno de ellos coincide
+                        // con el actual, continuamos el proceso, de lo contrario saltamos a la
+                        // siguiente iteración de la vista rompiendo el ciclo (Al siguiente Field del View)
+                        if (!isValidNamesComponentView(listComponentsToUpdate, componentToUpdate, null, null, null, nameComponentView, false)) {
+                            break;
+                        }
                         
+                        if (Objects.equals(nameComponentView, nameComponentController)) {
+                            
+                            try {
+                                asignValue(fieldView, nameComponentView, typeFieldView, fieldController, nameFieldController, typeFieldController, controller, tipoUpdateEnum, view);
+                            } catch (IllegalArgumentException ex) {
+                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "IllegalArgumentException", ex);
+                            } catch (IllegalAccessException ex) {
+                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "IllegalAccessException", ex);
+                            } catch (InvocationTargetException ex) {
+                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "InvocationTargetException", ex);
+                            } catch (SecurityException ex) {
+                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "SecurityException", ex);
+                            } catch (NullPointerException ex) {
+                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "NullPointerException", ex);
+                            } catch (Exception ex) {
+                                // Capturamos cualquier otra excepcion
+                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "Exception", ex);
+                            }
+                            
+                            break;
+                            
+                        }
                         
-                        if (Objects.equals(textViewNameModel, nameModelBean)) {
+                    } else if (fieldController.isAnnotationPresent(ModelBean.class)) {
+                        String[] valuesNameComponentView = nameComponentView.split("\\.");
+                        String[] valuesComponentToUpdate = componentToUpdate != null ? componentToUpdate.split("\\.") : null;
+                        
+                        // Si el nombre del componente en la vista, no empieza con el nombre del componente
+                        // En el controlador, pasamos a la siguiente iteracion (Al siguiente Field del controlador)
+                        if (!nameComponentView.startsWith(nameComponentController + ".")) {
+                            continue;
+                        }
+                        
+                        if (valuesNameComponentView.length != 2) {
+                            throw new IllegalArgumentException("El nombre del Componente " + nameComponentView + " debe ser: model.atributo");
+                        }
+                        
+                        if (valuesComponentToUpdate != null && valuesComponentToUpdate.length > 2) {
+                            throw new IllegalArgumentException("El nombre del Componente a actualizar debe ser: model.atributo ó model");
+                        }
+
+                        String componentViewNameModel = valuesNameComponentView[0];
+                        String componentViewNameField = valuesNameComponentView[1];
+
+                        // Validamos  en caso que haya una lista de componentes a actualizar
+                        // Si se especifican los componentes a actualizar y uno de ellos coincide
+                        // con el actual, continuamos el proceso, de lo contrario saltamos a la
+                        // siguiente iteración (Al siguiente Field)
+                        if (!isValidNamesComponentView(listComponentsToUpdate, componentToUpdate, valuesComponentToUpdate, componentViewNameModel, componentViewNameField, null, true)) {
+                            break;
+                        }
+                        
+                        if (Objects.equals(componentViewNameModel, nameComponentController)) {
                             try {
                                 Object objectModelBean = fieldController.get(controller);
                                 if (objectModelBean == null) {
-                                    throw new NullPointerException("ModelBean " + nameModelBean + " no se ha inicializado");
+                                    throw new NullPointerException("ModelBean " + nameComponentController + " no se ha inicializado");
                                 }
 
                                 Class classModel = objectModelBean.getClass();
                                 Field[] fieldsModel = classModel.getDeclaredFields();
                                 
+                                // Recorremos cada Field del Modelo para hacer la asignación de valores
                                 for (Field fieldModel : fieldsModel) {
                                     fieldModel.setAccessible(true);
                                     Class typeFieldModel = fieldModel.getType();
                                     String nameFieldModel = fieldModel.getName();
                                     
-                                    
-                                    if (Objects.equals(textViewNameField, nameFieldModel)) {
-                                        
-                                        Object valueComponentView = fieldView.get(view);
-                                        if (valueComponentView == null) {
-                                            throw new NullPointerException("Component in View " + nameComponentView + " no se ha inicializado");
-                                        }
-                                        
-                                        
-                                        if (fieldView.isAnnotationPresent(TextView.class)) {
-                                            updateGenericTextViewData(typeComponentView, valueComponentView, nameComponentView, fieldModel, typeFieldModel, objectModelBean, tipoUpdateEnum, null);
-                                            
-                                        } else if (fieldView.isAnnotationPresent(DateTextView.class)) {
-                                            DateTextView annotationDateTextView = fieldView.getAnnotation(DateTextView.class);
-                                            String pattern = annotationDateTextView.pattern();
-                                            
-                                            updateGenericTextViewData(typeComponentView, valueComponentView, nameComponentView, fieldModel, typeFieldModel, objectModelBean, tipoUpdateEnum, pattern);
-                                            
-                                        } else if (fieldView.isAnnotationPresent(NumberTextView.class)) {
-                                            NumberTextView annotationNumberTextView = fieldView.getAnnotation(NumberTextView.class);
-                                            String pattern = annotationNumberTextView.pattern();
-                                            
-                                            updateGenericTextViewData(typeComponentView, valueComponentView, nameComponentView, fieldModel, typeFieldModel, objectModelBean, tipoUpdateEnum, pattern);
-                                            
-                                        } else if (fieldView.isAnnotationPresent(ToggleButtonView.class)) {
-                                            if (JToggleButton.class.isAssignableFrom(typeComponentView)) {
-                                                JToggleButton jToggleButton = (JToggleButton) valueComponentView;
-                                                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
-                                                    fieldModel.set(objectModelBean, jToggleButton.isSelected());
-                                                }
-                                                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
-                                                    if (typeFieldModel == Boolean.class || typeFieldModel == boolean.class) {
-                                                        Boolean bool = (Boolean) fieldModel.get(objectModelBean);
-                                                        jToggleButton.setSelected(bool != null ? bool : Boolean.FALSE);
-                                                    } else {
-                                                        throw new IllegalArgumentException("Atributo in Model " + nameFieldModel + " no es de tipo boolean");
-                                                    }
-                                                }
-                                                
-                                            } else {
-                                                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo de JToggleButton in java swing");
-                                            }
-                                        }  else if (fieldView.isAnnotationPresent(ComboBoxView.class)) {
-                                            if (typeComponentView == JComboBox.class) {
-                                                JComboBox jCBcombo = (JComboBox) valueComponentView;
-                                                ComboBoxModel model = jCBcombo.getModel();
-                                                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
-                                                    fieldModel.set(objectModelBean, model.getSelectedItem());
-                                                }
-                                                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
-                                                    model.setSelectedItem(fieldModel.get(objectModelBean));
-                                                }
-                                            } else {
-                                                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo de ComboBox in java swing");
-                                            }
-                                        } else {
-                                            // ComponentView
-                                            ComponentView annotationComponentView = fieldView.getAnnotation(ComponentView.class);
-                                            String nameProperty = annotationComponentView.nameProperty().trim();
-                                            
-                                            for (Method m : typeComponentView.getMethods()) {
-                                                
-                                                if (m.getName().equals("get" + StringUtils.capitalize(nameProperty))) {
-                                                    if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
-                                                        fieldModel.set(objectModelBean, m.invoke(valueComponentView));
-                                                    }
-                                                }
-                                                
-                                                if (m.getName().equals("set" + StringUtils.capitalize(nameProperty))) {
-                                                    if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
-                                                        m.invoke(valueComponentView, fieldModel.get(objectModelBean));
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        
+                                    if (Objects.equals(componentViewNameField, nameFieldModel)) {
+                                        asignValue(fieldView, nameComponentView, typeFieldView, fieldModel, nameFieldModel, typeFieldModel, objectModelBean, tipoUpdateEnum, view);
                                     }
                                     
                                 }
@@ -324,17 +356,112 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                                 Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "IllegalAccessException", ex);
                             } catch (InvocationTargetException ex) {
                                 Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "InvocationTargetException", ex);
+                            } catch (SecurityException ex) {
+                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "SecurityException", ex);
+                            } catch (NullPointerException ex) {
+                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "NullPointerException", ex);
+                            } catch (Exception ex) {
+                                // Capturamos cualquier otra excepcion
+                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "Exception", ex);
                             }
                             
                             break;
                         }
-                        
                     }
                 }
             }
             
         }
         
+    }
+    
+    
+    private void asignValue(Field fieldView, String nameComponentView, Class typeComponentView, Field fieldModel, String nameFieldModel, Class typeFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, V view) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+        Object valueComponentView = fieldView.get(view);
+        if (valueComponentView == null) {
+            throw new NullPointerException("Component in View " + nameComponentView + " no se ha inicializado");
+        }
+
+        if (fieldView.isAnnotationPresent(TextView.class)) {
+            updateGenericTextViewData(typeComponentView, valueComponentView, nameComponentView, fieldModel, typeFieldModel, objectModelBean, tipoUpdateEnum, null);
+
+        } else if (fieldView.isAnnotationPresent(DateTextView.class)) {
+            DateTextView annotationDateTextView = fieldView.getAnnotation(DateTextView.class);
+            String pattern = annotationDateTextView.pattern();
+
+            updateGenericTextViewData(typeComponentView, valueComponentView, nameComponentView, fieldModel, typeFieldModel, objectModelBean, tipoUpdateEnum, pattern);
+
+        } else if (fieldView.isAnnotationPresent(NumberTextView.class)) {
+            NumberTextView annotationNumberTextView = fieldView.getAnnotation(NumberTextView.class);
+            String pattern = annotationNumberTextView.pattern();
+
+            updateGenericTextViewData(typeComponentView, valueComponentView, nameComponentView, fieldModel, typeFieldModel, objectModelBean, tipoUpdateEnum, pattern);
+
+        } else if (fieldView.isAnnotationPresent(ToggleButtonView.class)) {
+            if (JToggleButton.class.isAssignableFrom(typeComponentView)) {
+                JToggleButton jToggleButton = (JToggleButton) valueComponentView;
+                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
+                    fieldModel.set(objectModelBean, jToggleButton.isSelected());
+                }
+                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
+                    if (typeFieldModel == Boolean.class || typeFieldModel == boolean.class) {
+                        Boolean bool = (Boolean) fieldModel.get(objectModelBean);
+                        jToggleButton.setSelected(bool != null ? bool : Boolean.FALSE);
+                    } else {
+                        throw new IllegalArgumentException("Atributo in Model " + nameFieldModel + " no es de tipo boolean");
+                    }
+                }
+
+            } else {
+                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo de JToggleButton in java swing");
+            }
+        } else if (fieldView.isAnnotationPresent(ComboBoxView.class)) {
+            if (typeComponentView == JComboBox.class) {
+                JComboBox jCBcombo = (JComboBox) valueComponentView;
+                ComboBoxModel model = jCBcombo.getModel();
+                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
+                    fieldModel.set(objectModelBean, model.getSelectedItem());
+                }
+                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
+                    model.setSelectedItem(fieldModel.get(objectModelBean));
+                }
+            } else {
+                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo de ComboBox in java swing");
+            }
+        } else if (fieldView.isAnnotationPresent(TableView.class)) {
+            if (typeComponentView == JTable.class) {
+                JTable jTable = (JTable) valueComponentView;
+                TableModelGeneric model = (TableModelGeneric) jTable.getModel();
+                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
+                    fieldModel.set(objectModelBean, model.getListElements());
+                }
+                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
+                    model.setListElements((List) fieldModel.get(objectModelBean));
+                    model.fireTableDataChanged();
+                }
+            } else {
+                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo de Table in java swing");
+            }
+        } else {
+            // ComponentView
+            ComponentView annotationComponentView = fieldView.getAnnotation(ComponentView.class);
+            String nameProperty = annotationComponentView.nameProperty().trim();
+
+            for (Method m : typeComponentView.getMethods()) {
+
+                if (m.getName().equals("get" + StringUtils.capitalize(nameProperty))) {
+                    if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
+                        fieldModel.set(objectModelBean, m.invoke(valueComponentView));
+                    }
+                }
+
+                if (m.getName().equals("set" + StringUtils.capitalize(nameProperty))) {
+                    if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
+                        m.invoke(valueComponentView, fieldModel.get(objectModelBean));
+                    }
+                }
+            }
+        }
     }
     
     

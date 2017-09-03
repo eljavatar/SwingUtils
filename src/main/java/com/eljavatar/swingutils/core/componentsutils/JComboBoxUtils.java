@@ -1,7 +1,7 @@
 package com.eljavatar.swingutils.core.componentsutils;
 
 import com.eljavatar.swingutils.core.renderercomponents.ComboBoxRendererDefault;
-import com.eljavatar.swingutils.core.modelcomponents.ComboBoxModelListUtil;
+import com.eljavatar.swingutils.core.modelcomponents.ComboBoxModelGeneric;
 import java.util.List;
 import javax.swing.JComboBox;
 import javax.swing.ListCellRenderer;
@@ -13,7 +13,7 @@ import javax.swing.ListCellRenderer;
 public class JComboBoxUtils {
     
     public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean addElementNullDefault, String textNoSeleccionable) {
-        ComboBoxModelListUtil<E> model = new ComboBoxModelListUtil<>(list, addElementNullDefault);
+        ComboBoxModelGeneric<E> model = new ComboBoxModelGeneric<>(list, addElementNullDefault);
         jComboBox.setModel(model);
         
         ListCellRenderer rendererDefault = jComboBox.getRenderer();

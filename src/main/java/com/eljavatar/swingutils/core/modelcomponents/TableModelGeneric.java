@@ -9,13 +9,13 @@ import javax.swing.table.AbstractTableModel;
  * @author Andres Mauricio (http://www.eljavatar.com)
  * @param <E> Tipo de Objeto que tendran los elementos del JTable
  */
-public class ModelTableGeneric<E> extends AbstractTableModel implements Serializable {
+public class TableModelGeneric<E> extends AbstractTableModel implements Serializable {
 
     private final Class[] typeColumns;
     private final String[] titleColumns;
     private List<E> listElements;
     
-    public ModelTableGeneric(Class[] typeColumns, String[] titleColumns, List<E> listElements) {
+    public TableModelGeneric(Class[] typeColumns, String[] titleColumns, List<E> listElements) {
         this.typeColumns = typeColumns;
         this.titleColumns = titleColumns;
         this.listElements = listElements;

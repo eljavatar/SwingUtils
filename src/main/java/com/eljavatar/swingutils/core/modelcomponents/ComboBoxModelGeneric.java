@@ -11,27 +11,27 @@ import javax.swing.MutableComboBoxModel;
  * @author Andres Mauricio (http://www.eljavatar.com)
  * @param <E> Tipo de Objeto que tendrán los elementos del JComboBox
  */
-public class ComboBoxModelListUtil<E> extends AbstractListModel<E> implements MutableComboBoxModel<E>, Serializable {
+public class ComboBoxModelGeneric<E> extends AbstractListModel<E> implements MutableComboBoxModel<E>, Serializable {
 
     private List<E> listElements;
     private E selected;
 
-    public ComboBoxModelListUtil() {
+    public ComboBoxModelGeneric() {
         this(true);
     }
     
-    public ComboBoxModelListUtil(boolean addElementNullDefault) {
+    public ComboBoxModelGeneric(boolean addElementNullDefault) {
         this.listElements = new ArrayList<>();
         if (addElementNullDefault) {
             listElements.add(null);
         }
     }
     
-    public ComboBoxModelListUtil(List<E> list) {
+    public ComboBoxModelGeneric(List<E> list) {
         this(list, true);
     }
     
-    public ComboBoxModelListUtil(List<E> list, boolean addElementNullDefault) {
+    public ComboBoxModelGeneric(List<E> list, boolean addElementNullDefault) {
         this.listElements = new ArrayList<>(list);
         if (addElementNullDefault) {
             listElements.add(0, null);
