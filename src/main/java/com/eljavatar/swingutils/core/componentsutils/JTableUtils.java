@@ -14,8 +14,6 @@ import javax.swing.table.TableModel;
  */
 public class JTableUtils {
     
-    public JTableUtils() {}
-    
     public static void setProperties(final JTable jTable, Font fontTitle, TableModel tableModel) {
         setEstilosForTitulos(jTable, fontTitle);
         setPropiedadesGenericsForTable(jTable);

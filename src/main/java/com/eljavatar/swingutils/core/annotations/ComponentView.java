@@ -6,7 +6,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- *
+ * Esta Anotacion puede ser usada en cualquier tipo de componente.
+ * Lo único que requiere esta anotación, es el nombre de la propiedad con la cual
+ * se accede al valor que se desea obtener o modificar
+ * 
  * @author Andres Mauricio (http://www.eljavatar.com)
  */
 @Target({ElementType.FIELD})

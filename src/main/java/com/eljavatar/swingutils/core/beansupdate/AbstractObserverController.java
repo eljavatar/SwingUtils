@@ -75,6 +75,12 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         }
     }
     
+    /**
+     * Método con el que se asigna el Controlador y la Vista para que escuchen 
+     * los respectivos cambios
+     * @param controller
+     * @param view 
+     */
     public final void setListeners(C controller, V view) {
         this.controller = controller;
         this.view = view;
@@ -82,7 +88,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
     }
     
     /**
-     * 
+     * Método con el que se indica que hay cambios en la Vista o el Modelo que deben ser actualizados
      * @param object Indica el tipo de Actualizavion (Vista o Modelo) y/o los objetos a actualizar.
      *               <code>TipoUpdateEnum</code> lo usamos cuando sólo deseamos que se actualice toda la vista o todo el modelo.
      *               <code>ObjectUpdate</code> lo usamos cuando deseamos que solo se actualicen ciertos objetos en especifico
@@ -91,12 +97,12 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         this.observable.changeData(object);
     }
     
-    
-    private boolean presentAnnotationController(Field fieldController) {
-        return (fieldController.isAnnotationPresent(ModelBean.class)
-                || fieldController.isAnnotationPresent(PropertyController.class));
-    }
-    
+    /**
+     * Método que obtiene el nombre del componente SwingUtils asignado en el Controlador
+     * @param fieldController
+     * @return
+     * @throws IllegalArgumentException 
+     */
     private String getNameAnnotationComponentController(Field fieldController) throws IllegalArgumentException {
         ModelBean annotationModelBean = fieldController.getAnnotation(ModelBean.class);
         PropertyController annotationPropertyController = fieldController.getAnnotation(PropertyController.class);
@@ -114,12 +120,17 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         }
         
         if (count > 1) {
-            throw new IllegalArgumentException("El atributo " + fieldController.getName() + " tiene mas de una anotacion");
+            throw new IllegalArgumentException("El atributo " + fieldController.getName() + " en el controlador, tiene mas de una anotacion de SwingUtils");
         }
         
         return nameComponentController;
     }
     
+    /**
+     * Método que valida si un componente en la Vista contiene alguna de las anotaciones de SwingUtils
+     * @param fieldView
+     * @return 
+     */
     private boolean presentAnnotationView(Field fieldView) {
         return (fieldView.isAnnotationPresent(TextView.class)
                 || fieldView.isAnnotationPresent(DateTextView.class)
@@ -130,6 +141,12 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                 || fieldView.isAnnotationPresent(ComponentView.class));
     }
     
+    /**
+     * Metodo que obtiene el nombre del componente SwingUtils asignado en la Vista
+     * @param fieldView
+     * @return
+     * @throws IllegalArgumentException 
+     */
     private String getNameAnnotationComponentView(Field fieldView) throws IllegalArgumentException {
         TextView annotationTextView = fieldView.getAnnotation(TextView.class);
         DateTextView annotationDateTextView = fieldView.getAnnotation(DateTextView.class);
@@ -172,14 +189,24 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         }
         
         if (count > 1) {
-            throw new IllegalArgumentException("El atributo " + fieldView.getName() + " tiene mas de una anotacion");
+            throw new IllegalArgumentException("El atributo " + fieldView.getName() + " en la vista, tiene mas de una anotacion de SwingUtils");
         }
         
         return nameComponentView;
     }
     
     
-    
+    /**
+     * Método que valida si el nombre de un componente en vista o controlador es válido
+     * @param listComponentsToUpdate
+     * @param nameComponentToUpdate
+     * @param valuesComponentToUpdate
+     * @param componentViewNameModel
+     * @param componentViewNameField
+     * @param nameComponentView
+     * @param isModelBean
+     * @return 
+     */
     private boolean isValidNamesComponentView(List<String> listComponentsToUpdate, String nameComponentToUpdate, String[] valuesComponentToUpdate, String componentViewNameModel, String componentViewNameField, String nameComponentView, boolean isModelBean) {
         // Si tenemos un componente a actualizar, y es solo el nombre del modelo, lo comparamos con el nombre del componente en la Anotacion
         if (isModelBean && valuesComponentToUpdate != null && valuesComponentToUpdate.length == 1 && !Objects.equals(componentViewNameModel, valuesComponentToUpdate[0])) {
@@ -229,8 +256,15 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         return true;
     }
     
-    public void actualizar(C controller, V view, TipoUpdateEnum tipoUpdateEnum, String componentToUpdate, List<String> listComponentsToUpdate) {
-        
+    /**
+     * Método que realiza el proceso de actualizacion en vista o controlador
+     * @param controller
+     * @param view
+     * @param tipoUpdateEnum
+     * @param componentToUpdate
+     * @param listComponentsToUpdate 
+     */
+    private void actualizar(C controller, V view, TipoUpdateEnum tipoUpdateEnum, String componentToUpdate, List<String> listComponentsToUpdate) {
         Class classController = controller.getClass();
         Class classView = view.getClass();
         
@@ -266,70 +300,52 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                         throw e;
                     }
                     
-                    
-                    if (fieldController.isAnnotationPresent(PropertyController.class)) {
-                        // Validamos  en caso que haya una lista de componentes a actualizar
-                        // Si se especifican los componentes a actualizar y uno de ellos coincide
-                        // con el actual, continuamos el proceso, de lo contrario saltamos a la
-                        // siguiente iteración de la vista rompiendo el ciclo (Al siguiente Field del View)
-                        if (!isValidNamesComponentView(listComponentsToUpdate, componentToUpdate, null, null, null, nameComponentView, false)) {
-                            break;
-                        }
-                        
-                        if (Objects.equals(nameComponentView, nameComponentController)) {
-                            
-                            try {
-                                asignValue(fieldView, nameComponentView, typeFieldView, fieldController, nameFieldController, typeFieldController, controller, tipoUpdateEnum, view);
-                            } catch (IllegalArgumentException ex) {
-                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "IllegalArgumentException", ex);
-                            } catch (IllegalAccessException ex) {
-                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "IllegalAccessException", ex);
-                            } catch (InvocationTargetException ex) {
-                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "InvocationTargetException", ex);
-                            } catch (SecurityException ex) {
-                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "SecurityException", ex);
-                            } catch (NullPointerException ex) {
-                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "NullPointerException", ex);
-                            } catch (Exception ex) {
-                                // Capturamos cualquier otra excepcion
-                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "Exception", ex);
+                    try {
+                        if (fieldController.isAnnotationPresent(PropertyController.class)) {
+                            // Validamos  en caso que haya una lista de componentes a actualizar
+                            // Si se especifican los componentes a actualizar y uno de ellos coincide
+                            // con el actual, continuamos el proceso, de lo contrario saltamos a la
+                            // siguiente iteración de la vista rompiendo el ciclo (Al siguiente Field del View)
+                            if (!isValidNamesComponentView(listComponentsToUpdate, componentToUpdate, null, null, null, nameComponentView, false)) {
+                                break;
                             }
-                            
-                            break;
-                            
-                        }
-                        
-                    } else if (fieldController.isAnnotationPresent(ModelBean.class)) {
-                        String[] valuesNameComponentView = nameComponentView.split("\\.");
-                        String[] valuesComponentToUpdate = componentToUpdate != null ? componentToUpdate.split("\\.") : null;
-                        
-                        // Si el nombre del componente en la vista, no empieza con el nombre del componente
-                        // En el controlador, pasamos a la siguiente iteracion (Al siguiente Field del controlador)
-                        if (!nameComponentView.startsWith(nameComponentController + ".")) {
-                            continue;
-                        }
-                        
-                        if (valuesNameComponentView.length != 2) {
-                            throw new IllegalArgumentException("El nombre del Componente " + nameComponentView + " debe ser: model.atributo");
-                        }
-                        
-                        if (valuesComponentToUpdate != null && valuesComponentToUpdate.length > 2) {
-                            throw new IllegalArgumentException("El nombre del Componente a actualizar debe ser: model.atributo ó model");
-                        }
 
-                        String componentViewNameModel = valuesNameComponentView[0];
-                        String componentViewNameField = valuesNameComponentView[1];
+                            if (Objects.equals(nameComponentView, nameComponentController)) {
+                                asignValue(fieldView, nameComponentView, typeFieldView, fieldController, nameFieldController, typeFieldController, controller, tipoUpdateEnum, view);
 
-                        // Validamos  en caso que haya una lista de componentes a actualizar
-                        // Si se especifican los componentes a actualizar y uno de ellos coincide
-                        // con el actual, continuamos el proceso, de lo contrario saltamos a la
-                        // siguiente iteración (Al siguiente Field)
-                        if (!isValidNamesComponentView(listComponentsToUpdate, componentToUpdate, valuesComponentToUpdate, componentViewNameModel, componentViewNameField, null, true)) {
-                            break;
-                        }
-                        
-                        if (Objects.equals(componentViewNameModel, nameComponentController)) {
-                            try {
+                                break;
+                            }
+
+                        } else if (fieldController.isAnnotationPresent(ModelBean.class)) {
+                            String[] valuesNameComponentView = nameComponentView.split("\\.");
+                            String[] valuesComponentToUpdate = componentToUpdate != null ? componentToUpdate.split("\\.") : null;
+
+                            // Si el nombre del componente en la vista, no empieza con el nombre del componente
+                            // En el controlador, pasamos a la siguiente iteracion (Al siguiente Field del controlador)
+                            if (!nameComponentView.startsWith(nameComponentController + ".")) {
+                                continue;
+                            }
+
+                            if (valuesNameComponentView.length != 2) {
+                                throw new IllegalArgumentException("El nombre del Componente " + nameComponentView + " debe ser: model.atributo");
+                            }
+
+                            if (valuesComponentToUpdate != null && valuesComponentToUpdate.length > 2) {
+                                throw new IllegalArgumentException("El nombre del Componente a actualizar debe ser: model.atributo ó model");
+                            }
+
+                            String componentViewNameModel = valuesNameComponentView[0];
+                            String componentViewNameField = valuesNameComponentView[1];
+
+                            // Validamos  en caso que haya una lista de componentes a actualizar
+                            // Si se especifican los componentes a actualizar y uno de ellos coincide
+                            // con el actual, continuamos el proceso, de lo contrario saltamos a la
+                            // siguiente iteración (Al siguiente Field)
+                            if (!isValidNamesComponentView(listComponentsToUpdate, componentToUpdate, valuesComponentToUpdate, componentViewNameModel, componentViewNameField, null, true)) {
+                                break;
+                            }
+
+                            if (Objects.equals(componentViewNameModel, nameComponentController)) {
                                 Object objectModelBean = fieldController.get(controller);
                                 if (objectModelBean == null) {
                                     throw new NullPointerException("ModelBean " + nameComponentController + " no se ha inicializado");
@@ -337,49 +353,60 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
 
                                 Class classModel = objectModelBean.getClass();
                                 Field[] fieldsModel = classModel.getDeclaredFields();
-                                
+
                                 // Recorremos cada Field del Modelo para hacer la asignación de valores
                                 for (Field fieldModel : fieldsModel) {
                                     fieldModel.setAccessible(true);
                                     Class typeFieldModel = fieldModel.getType();
                                     String nameFieldModel = fieldModel.getName();
-                                    
+
                                     if (Objects.equals(componentViewNameField, nameFieldModel)) {
                                         asignValue(fieldView, nameComponentView, typeFieldView, fieldModel, nameFieldModel, typeFieldModel, objectModelBean, tipoUpdateEnum, view);
                                     }
-                                    
                                 }
-                                
-                            } catch (IllegalArgumentException ex) {
-                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "IllegalArgumentException", ex);
-                            } catch (IllegalAccessException ex) {
-                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "IllegalAccessException", ex);
-                            } catch (InvocationTargetException ex) {
-                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "InvocationTargetException", ex);
-                            } catch (SecurityException ex) {
-                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "SecurityException", ex);
-                            } catch (NullPointerException ex) {
-                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "NullPointerException", ex);
-                            } catch (Exception ex) {
-                                // Capturamos cualquier otra excepcion
-                                Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "Exception", ex);
+
+                                break;
                             }
-                            
-                            break;
                         }
+                        
+                    } catch (IllegalArgumentException ex) {
+                        Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "IllegalArgumentException", ex);
+                    } catch (IllegalAccessException ex) {
+                        Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "IllegalAccessException", ex);
+                    } catch (InvocationTargetException ex) {
+                        Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "InvocationTargetException", ex);
+                    } catch (SecurityException ex) {
+                        Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "SecurityException", ex);
+                    } catch (NullPointerException ex) {
+                        Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "NullPointerException", ex);
+                    } catch (Exception ex) {
+                        // Capturamos cualquier otra excepcion
+                        Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "Exception", ex);
                     }
                 }
             }
-            
         }
-        
     }
     
-    
+    /**
+     * Método que asigna un valor a un componente en la vista o en el controlador
+     * @param fieldView
+     * @param nameComponentView
+     * @param typeComponentView
+     * @param fieldModel
+     * @param nameFieldModel
+     * @param typeFieldModel
+     * @param objectModelBean
+     * @param tipoUpdateEnum
+     * @param view
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException
+     * @throws InvocationTargetException 
+     */
     private void asignValue(Field fieldView, String nameComponentView, Class typeComponentView, Field fieldModel, String nameFieldModel, Class typeFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, V view) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
         Object valueComponentView = fieldView.get(view);
         if (valueComponentView == null) {
-            throw new NullPointerException("Component in View " + nameComponentView + " no se ha inicializado");
+            throw new NullPointerException("Component in View " + nameComponentView + " is null");
         }
 
         if (fieldView.isAnnotationPresent(TextView.class)) {
@@ -413,7 +440,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                 }
 
             } else {
-                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo de JToggleButton in java swing");
+                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo JToggleButton en java swing");
             }
         } else if (fieldView.isAnnotationPresent(ComboBoxView.class)) {
             if (typeComponentView == JComboBox.class) {
@@ -426,7 +453,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                     model.setSelectedItem(fieldModel.get(objectModelBean));
                 }
             } else {
-                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo de ComboBox in java swing");
+                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo ComboBox en java swing");
             }
         } else if (fieldView.isAnnotationPresent(TableView.class)) {
             if (typeComponentView == JTable.class) {
@@ -440,7 +467,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                     model.fireTableDataChanged();
                 }
             } else {
-                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo de Table in java swing");
+                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo Table en java swing");
             }
         } else {
             // ComponentView
@@ -464,17 +491,39 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         }
     }
     
-    
+    /**
+     * Método que realiza la actualización de valores cuando el componente java swing es de tipo JTextComponent
+     * @param typeComponentView
+     * @param valueComponentView
+     * @param nameComponentView
+     * @param fieldModel
+     * @param typeFieldModel
+     * @param objectModelBean
+     * @param tipoUpdateEnum
+     * @param pattern
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException 
+     */
     private void updateGenericTextViewData(Class typeComponentView, Object valueComponentView, String nameComponentView, Field fieldModel, Class typeFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, String pattern) throws IllegalArgumentException, IllegalAccessException {
         if (JTextComponent.class.isAssignableFrom(typeComponentView)) {
             JTextComponent jTFfield = (JTextComponent) valueComponentView;
             setTextData(fieldModel, typeFieldModel, objectModelBean, tipoUpdateEnum, jTFfield, pattern);
         } else {
-            throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo de texto in java swing");
+            throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo texto (JTextComponent) en java swing");
         }
     }
     
-    
+    /**
+     * Método que asigna texto cuando el componente java swing es de tipo JTextComponent
+     * @param fieldModel
+     * @param typeFieldModel
+     * @param objectModelBean
+     * @param tipoUpdateEnum
+     * @param jTextComponent
+     * @param pattern
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException 
+     */
     private void setTextData(Field fieldModel, Class typeFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, JTextComponent jTextComponent, String pattern) throws IllegalArgumentException, IllegalAccessException {
         if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
             if (getTextFromComponent(jTextComponent).isEmpty()) {
@@ -489,8 +538,17 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         }
     }
     
-    
-    
+    /**
+     * Método que inserta texto en un atributo del modelo según su tipo de dato y cuando el componente
+     * java swing en la vista es de tipo JTextComponent
+     * @param fieldModel
+     * @param typeFieldModel
+     * @param objectModelBean
+     * @param jTextComponent
+     * @param pattern
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException 
+     */
     private void insertIntoFieldModelFromTextComponent(Field fieldModel, Class typeFieldModel, Object objectModelBean, JTextComponent jTextComponent, String pattern) throws IllegalArgumentException, IllegalAccessException {
         try  {
             if (typeFieldModel == String.class) {
@@ -559,15 +617,21 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                 }
             }
         } catch (NumberFormatException ex) {
-            //System.out.println("No es un número");
             Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "NumberFormatException", ex);
         } catch (ParseException ex) {
-            //System.out.println("No es una fecha o un numero");
             Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "ParseException", ex);
+        } catch (IllegalArgumentException ex) {
+            Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "IllegalArgumentException", ex);
         }
     }
     
-    private DateTimeFormatter getDateTimeFormatter(Class typeFieldModel, String pattern) {
+    /**
+     * Método que obtiene el formato de fecha según el pattern indicado por el usuario
+     * @param typeFieldModel
+     * @param pattern
+     * @return 
+     */
+    private DateTimeFormatter getDateTimeFormatter(Class typeFieldModel, String pattern) throws IllegalArgumentException {
         if (pattern != null && !pattern.isEmpty()) {
             return DateTimeFormatter.ofPattern(pattern);
         }
@@ -578,11 +642,16 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         } else if (typeFieldModel == LocalDateTime.class) {
             return DateTimeFormatter.ISO_LOCAL_DATE_TIME;
         } else {
-            throw new IllegalArgumentException("No se reconoce el tipo de dato de fecha de java.time.*");
+            throw new IllegalArgumentException("No se reconoce el tipo de dato de fecha en java.time.*");
         }
     }
     
-    private String getTextFromComponent(JTextComponent jTextComponent) {
+    /**
+     * Método que obtiene el texto de un componente java swing de tipo JTextComponent
+     * @param jTextComponent
+     * @return 
+     */
+    private String getTextFromComponent(JTextComponent jTextComponent) throws IllegalArgumentException {
         if (jTextComponent instanceof JTextField) {
             JTextField jTextField = (JTextField) jTextComponent;
             return jTextField.getText();
@@ -602,10 +671,21 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
             JTextPane jTextPane = (JTextPane) jTextComponent;
             return jTextPane.getText();
         } else {
-            throw new IllegalArgumentException("No se reconoce el tipo de componente como de tipo dee texto");
+            throw new IllegalArgumentException("El componente " + jTextComponent.getClass().getName() + " no es de tipo texto (JTextComponent) en la vista");
         }
     }
     
+    /**
+     * Método que inserta texto en un componente java swing de tipo JTextComponent
+     * desde su correspondiente atributo en el modelo
+     * @param fieldModel
+     * @param typeFieldModel
+     * @param objectModelBean
+     * @param jTextComponent
+     * @param pattern
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException 
+     */
     private void insertIntoTextComponentFromFieldModel(Field fieldModel, Class typeFieldModel, Object objectModelBean, JTextComponent jTextComponent, String pattern) throws IllegalArgumentException, IllegalAccessException {
         String text = getTextFormattedForInsertIntoComponent(fieldModel, typeFieldModel, objectModelBean, pattern);
         if (jTextComponent instanceof JTextField) {
@@ -627,10 +707,21 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
             JTextPane jTextPane = (JTextPane) jTextComponent;
             jTextPane.setText(text);
         } else {
-            throw new IllegalArgumentException("No se reconoce el tipo de componente como de tipo de texto");
+            throw new IllegalArgumentException("El componente correspondiente al atributo " + fieldModel.getName() + " no es de tipo texto (JTextComponent) en la vista");
         }
     }
     
+    /**
+     * Método que obtiene el texto formateado de un atributo en el modelo para insertarlo en
+     * su correspondiente componente java swing cuando este es de tipo JTextComponent
+     * @param fieldModel
+     * @param typeFieldModel
+     * @param objectModelBean
+     * @param pattern
+     * @return
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException 
+     */
     private String getTextFormattedForInsertIntoComponent(Field fieldModel, Class typeFieldModel, Object objectModelBean, String pattern) throws IllegalArgumentException, IllegalAccessException {
         Object object = fieldModel.get(objectModelBean);
         if (object == null) {

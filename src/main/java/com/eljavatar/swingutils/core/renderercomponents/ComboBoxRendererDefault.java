@@ -1,10 +1,8 @@
 package com.eljavatar.swingutils.core.renderercomponents;
 
-import java.awt.Color;
 import java.awt.Component;
 import javax.swing.JList;
 import javax.swing.ListCellRenderer;
-import javax.swing.UIManager;
 import javax.swing.plaf.basic.BasicComboBoxRenderer;
 
 /**
