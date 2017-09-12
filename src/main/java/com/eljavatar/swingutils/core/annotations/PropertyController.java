@@ -15,6 +15,11 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface PropertyController {
     
+    /**
+     * 
+     * @return Nombre personalizado del atributo en el controlador. Si se desea conservar
+     * el mismo nombre con el que fue declarado el atributo, se deja vacío por defecto
+     */
     String name() default "";
     
 }

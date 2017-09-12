@@ -6,10 +6,8 @@
             <goals>
                 <goal>clean</goal>
                 <goal>deploy</goal>
-                <goal>-Dgpg.skip</goal>
             </goals>
             <activatedProfiles>
-                <activatedProfile>ossrh</activatedProfile>
                 <activatedProfile>release</activatedProfile>
             </activatedProfiles>
         </action>

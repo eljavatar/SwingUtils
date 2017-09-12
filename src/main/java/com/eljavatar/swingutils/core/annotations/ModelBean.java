@@ -14,7 +14,12 @@ import java.lang.annotation.Target;
 @Target({ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ModelBean {
-    
+
+    /**
+     * 
+     * @return Nombre personalizado del objeto modelo en el controlador. Si se desea conservar
+     * el mismo nombre con el que fue declarado el objeto, se deja vacío por defecto
+     */
     String name() default "";
     
 }
