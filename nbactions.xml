@@ -13,4 +13,15 @@
                 <activatedProfile>release</activatedProfile>
             </activatedProfiles>
         </action>
+        <action>
+            <actionName>CUSTOM-maven_ossrh</actionName>
+            <displayName>maven_ossrh</displayName>
+            <goals>
+                <goal>clean</goal>
+                <goal>deploy</goal>
+            </goals>
+            <activatedProfiles>
+                <activatedProfile>ossrh</activatedProfile>
+            </activatedProfiles>
+        </action>
     </actions>
