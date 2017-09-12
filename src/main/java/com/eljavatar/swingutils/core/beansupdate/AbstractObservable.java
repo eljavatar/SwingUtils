@@ -6,7 +6,7 @@ import java.util.Observer;
 /**
  *
  * @author Andres Mauricio (http://www.eljavatar.com)
- * @param <C>
+ * @param <C> Controlador desde el cual se notificaran los cambios
  */
 public class AbstractObservable<C extends Observer> extends Observable {
     

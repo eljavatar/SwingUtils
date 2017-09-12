@@ -18,6 +18,10 @@ public @interface ComponentView {
     
     String name();
     
+    /**
+     * Nombre de la propiedad para acceder al valor requerido mediante su metodo 'get' o 'set'
+     * @return 
+     */
     String nameProperty();
     
 }

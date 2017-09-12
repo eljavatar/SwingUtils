@@ -45,8 +45,8 @@ import javax.swing.JTable;
 /**
  *
  * @author Andres Mauricio (http://www.eljavatar.com)
- * @param <C> Controlador que debe extender de la clase Observer
- * @param <V> Vista
+ * @param <C> Controlador a sincronizar
+ * @param <V> Vista a sincronizar
  */
 public class AbstractObserverController<C extends Observer, V> implements Observer {
 
@@ -78,8 +78,8 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
     /**
      * Método con el que se asigna el Controlador y la Vista para que escuchen 
      * los respectivos cambios
-     * @param controller
-     * @param view 
+     * @param controller Controlador a sincronizar
+     * @param view Vista a sincronizar
      */
     public final void setListeners(C controller, V view) {
         this.controller = controller;
