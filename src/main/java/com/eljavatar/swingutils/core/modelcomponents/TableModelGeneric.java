@@ -9,7 +9,7 @@ import javax.swing.table.AbstractTableModel;
  * @author Andres Mauricio (http://www.eljavatar.com)
  * @param <E> Tipo de Objeto que tendran los elementos del JTable
  */
-public class TableModelGeneric<E> extends AbstractTableModel implements Serializable {
+public abstract class TableModelGeneric<E> extends AbstractTableModel implements Serializable {
 
     private final Class[] typeColumns;
     private final String[] titleColumns;
@@ -44,11 +44,6 @@ public class TableModelGeneric<E> extends AbstractTableModel implements Serializ
     @Override
     public int getColumnCount() {
         return titleColumns.length;
-    }
-
-    @Override
-    public Object getValueAt(int rowIndex, int columnIndex) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     public List<E> getListElements() {
