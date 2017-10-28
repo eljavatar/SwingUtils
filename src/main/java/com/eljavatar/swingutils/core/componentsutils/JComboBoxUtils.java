@@ -12,8 +12,8 @@ import javax.swing.ListCellRenderer;
  */
 public class JComboBoxUtils {
     
-    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean addElementNullDefault, String textNoSeleccionable) {
-        ComboBoxModelGeneric<E> model = new ComboBoxModelGeneric<>(list, addElementNullDefault);
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean addElementNullDefault, String textNoSeleccionable, boolean isSynchronized, boolean needDetectConcurrentModifications) {
+        ComboBoxModelGeneric<E> model = new ComboBoxModelGeneric<>(list, addElementNullDefault, isSynchronized, needDetectConcurrentModifications);
         jComboBox.setModel(model);
         
         ListCellRenderer rendererDefault = jComboBox.getRenderer();
@@ -21,8 +21,24 @@ public class JComboBoxUtils {
         jComboBox.setRenderer(renderer);
     }
     
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, String textNoSeleccionable, boolean isSynchronized, boolean needDetectConcurrentModifications) {
+        JComboBoxUtils.setProperties(jComboBox, list, true, textNoSeleccionable, isSynchronized, needDetectConcurrentModifications);
+    }
+    
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean isSynchronized, boolean needDetectConcurrentModifications) {
+        JComboBoxUtils.setProperties(jComboBox, list, true, "- Seleccione -", isSynchronized, needDetectConcurrentModifications);
+    }
+    
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean addElementNullDefault, String textNoSeleccionable) {
+        JComboBoxUtils.setProperties(jComboBox, list, addElementNullDefault, textNoSeleccionable, false, true);
+    }
+    
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, String textNoSeleccionable) {
+        JComboBoxUtils.setProperties(jComboBox, list, true, textNoSeleccionable, false, true);
+    }
+    
     public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list) {
-        JComboBoxUtils.setProperties(jComboBox, list, true, "- Seleccione -");
+        JComboBoxUtils.setProperties(jComboBox, list, true, "- Seleccione -", false, true);
     }
     
 }

@@ -2,7 +2,9 @@ package com.eljavatar.swingutils.core.modelcomponents;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javax.swing.AbstractListModel;
 import javax.swing.MutableComboBoxModel;
 
@@ -15,24 +17,108 @@ public class ComboBoxModelGeneric<E> extends AbstractListModel<E> implements Mut
 
     private List<E> listElements;
     private E selected;
-
+    private boolean isSynchronized;
+    private boolean needDetectConcurrentModifications;
+    
+    /**
+     * 
+     */
     public ComboBoxModelGeneric() {
         this(true);
     }
     
+    /**
+     * 
+     * @param addElementNullDefault Indica si se desea agregar un elemento nulo por defecto
+     *      y no seleccionable al principio de la lista
+     */
     public ComboBoxModelGeneric(boolean addElementNullDefault) {
-        this.listElements = new ArrayList<>();
+        this(addElementNullDefault, false, true);
+    }
+    
+    /**
+     * 
+     * @param isSynchronized Define si la lista de elementos será una colección sincronizada
+     * @param needDetectConcurrentModifications 
+     */
+    public ComboBoxModelGeneric(boolean isSynchronized, boolean needDetectConcurrentModifications) {
+        this(true, isSynchronized, needDetectConcurrentModifications);
+    }
+    
+    /**
+     * 
+     * @param addElementNullDefault Indica si se desea agregar un elemento nulo por defecto
+     *      y no seleccionable al principio de la lista
+     * @param isSynchronized Define si la lista de elementos será una colección sincronizada
+     * @param needDetectConcurrentModifications En caso de que sea una colección sincronizada,
+     *      define si necesita detectar modificaciones concurrentes, ya que de acuerdo a esta
+     *      opción, se decide cuál será la implementacion óptima para crear la lista de datos
+     */
+    public ComboBoxModelGeneric(boolean addElementNullDefault, boolean isSynchronized, boolean needDetectConcurrentModifications) {
+        this.isSynchronized = isSynchronized;
+        this.needDetectConcurrentModifications = needDetectConcurrentModifications;
+        
+        if (this.isSynchronized) {
+            this.listElements = this.needDetectConcurrentModifications ? Collections.synchronizedList(new ArrayList<>()) : new CopyOnWriteArrayList<>();
+        } else {
+            this.listElements = new ArrayList<>();
+        }
+        
         if (addElementNullDefault) {
             listElements.add(null);
         }
     }
     
+    /**
+     * 
+     * @param list Lista de elementos que tendrá el Modelo del JComboBox
+     */
     public ComboBoxModelGeneric(List<E> list) {
-        this(list, true);
+        this(list, true, false, true);
     }
     
+    /**
+     * 
+     * @param list Lista de elementos que tendrá el Modelo del JComboBox
+     * @param addElementNullDefault Indica si se desea agregar un elemento nulo por defecto
+     *      y no seleccionable al principio de la lista
+     */
     public ComboBoxModelGeneric(List<E> list, boolean addElementNullDefault) {
-        this.listElements = new ArrayList<>(list);
+        this(list, addElementNullDefault, false, true);
+    }
+    
+    /**
+     * 
+     * @param list Lista de elementos que tendrá el Modelo del JComboBox
+     * @param isSynchronized Define si la lista de elementos será una colección sincronizada
+     * @param needDetectConcurrentModifications En caso de que sea una colección sincronizada,
+     *      define si necesita detectar modificaciones concurrentes, ya que de acuerdo a esta
+     *      opción, se decide cuál será la implementacion óptima para crear la lista de datos
+     */
+    public ComboBoxModelGeneric(List<E> list, boolean isSynchronized, boolean needDetectConcurrentModifications) {
+        this(list, true, isSynchronized, needDetectConcurrentModifications);
+    }
+    
+    /**
+     * 
+     * @param list Lista de elementos que tendrá el Modelo del JComboBox
+     * @param addElementNullDefault Indica si se desea agregar un elemento nulo por defecto
+     *      y no seleccionable al principio de la lista
+     * @param isSynchronized Define si la lista de elementos será una colección sincronizada
+     * @param needDetectConcurrentModifications En caso de que sea una colección sincronizada,
+     *      define si necesita detectar modificaciones concurrentes, ya que de acuerdo a esta
+     *      opción, se decide cuál será la implementacion óptima para crear la lista de datos
+     */
+    public ComboBoxModelGeneric(List<E> list, boolean addElementNullDefault, boolean isSynchronized, boolean needDetectConcurrentModifications) {
+        this.isSynchronized = isSynchronized;
+        this.needDetectConcurrentModifications = needDetectConcurrentModifications;
+        
+        if (this.isSynchronized) {
+            this.listElements = this.needDetectConcurrentModifications ? Collections.synchronizedList(new ArrayList<>(list)) : new CopyOnWriteArrayList<>(list);
+        } else {
+            this.listElements = new ArrayList<>(list);
+        }
+        
         if (addElementNullDefault) {
             listElements.add(0, null);
         }
@@ -72,7 +158,11 @@ public class ComboBoxModelGeneric<E> extends AbstractListModel<E> implements Mut
     }
 
     public void setListElements(List<E> listElements) {
-        this.listElements = listElements;
+        if (this.isSynchronized) {
+            this.listElements = this.needDetectConcurrentModifications ? Collections.synchronizedList(new ArrayList<>(listElements)) : new CopyOnWriteArrayList<>(listElements);
+        } else {
+            this.listElements = new ArrayList<>(listElements);
+        }
         fireIntervalAdded(this, this.listElements.size()-1, this.listElements.size()-1);
     }
     
