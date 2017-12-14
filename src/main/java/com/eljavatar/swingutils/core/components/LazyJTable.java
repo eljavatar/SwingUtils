@@ -16,21 +16,219 @@
 package com.eljavatar.swingutils.core.components;
 
 import com.eljavatar.swingutils.core.modelcomponents.TableModelGeneric;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Font;
 import java.util.List;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.ButtonGroup;
+import javax.swing.ButtonModel;
+import javax.swing.JRadioButton;
 import javax.swing.JTable;
+import javax.swing.RowFilter;
+import javax.swing.table.TableRowSorter;
 
 /**
- *
- * @author Andres
+ * https://java-swing-tips.blogspot.com.co/2008/03/jtable-pagination-example-using.html
+ * https://www.roseindia.net/tutorial/java/swing/javaPagination.html
+ * https://gist.github.com/aterai/7261520
+ * @author Andres Mauricio (http://www.eljavatar.com)
  * @param <T>
  */
 public class LazyJTable<T> extends javax.swing.JPanel {
 
+    private static final int LR_PAGE_SIZE = 5;
+    private static final LinkViewRadioButtonUI LINKVIEW_RADIOBUTTON_UI = new LinkViewRadioButtonUI();
+    private final Box box = Box.createHorizontalBox();
+    private TableRowSorter<TableModelGeneric> sorter;
+    private Font fontPages;
+    private int sizeData;
+    private int currentPage;
+    private int pageSize;
+    
     /**
      * Creates new form LazyJTable
      */
     public LazyJTable() {
         initComponents();
+        this.fontPages = getFont();
+    }
+    
+    /**
+     * 
+     * @param itemsPerPage
+     * @param currentPageIndex 
+     */
+    public void initLazy(int itemsPerPage, int currentPageIndex) {
+        this.sorter = new TableRowSorter<>(getTableModel());
+        
+        this.jTlistData.setRowSorter(sorter);
+        
+        this.currentPage = currentPageIndex;
+        this.pageSize = itemsPerPage;
+        initLinkBox(itemsPerPage, currentPageIndex);
+        
+        this.setLayout(new BorderLayout());
+        this.box.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        add(box, BorderLayout.SOUTH);
+        add(jSPlistData);
+        
+        validate();
+        updateUI();
+    }
+    
+    /**
+     * 
+     */
+    public void updateLazy() {
+        initLinkBox(pageSize, currentPage);
+        
+        validate();
+        updateUI();
+    }
+    
+    /**
+     * 
+     * @param itemsPerPage Cantidad de filas a mostrar por pagina
+     * @param target Página a la que se quiere navegar
+     * @return 
+     */
+    private RowFilter<TableModelGeneric, Integer> makeRowFilter(final int itemsPerPage, final int target) {
+        return new RowFilter<TableModelGeneric, Integer>() {
+            @Override
+            public boolean include(Entry<? extends TableModelGeneric, ? extends Integer> entry) {
+                int ei = entry.getIdentifier();
+                return (target * itemsPerPage <= ei && ei < target * itemsPerPage + itemsPerPage);
+            }
+        };
+    }
+    
+    /**
+     * 
+     * @param itemsPerPage Cantidad de filas a mostrar por pagina
+     * @param target Página a la que se quiere navegar
+     * @param title
+     * @param flag
+     * @return 
+     */
+    private JRadioButton makePrevNextRadioButton(final int itemsPerPage, final int target, String title, boolean flag) {
+        JRadioButton radio = new JRadioButton(title);
+        radio.setForeground(Color.BLUE);
+        radio.setUI(LINKVIEW_RADIOBUTTON_UI);
+        radio.setFont(fontPages);
+        radio.setEnabled(flag);
+        radio.addActionListener(e -> {
+            currentPage = target;
+            initLinkBox(itemsPerPage, target);
+        });
+        return radio;
+    }
+    
+    /**
+     * 
+     * @param itemsPerPage
+     * @param current
+     * @param target
+     * @return 
+     */
+    private JRadioButton makeRadioButton(final int itemsPerPage, int current, final int target) {
+        JRadioButton radio = new JRadioButton(String.valueOf(target)) {
+            @Override
+            protected void fireStateChanged() {
+                ButtonModel buttonModel = getModel();
+                if (buttonModel.isEnabled()) {
+                    if (buttonModel.isPressed() && buttonModel.isArmed()) {
+                        setForeground(Color.GREEN);
+                    } else if (buttonModel.isSelected()) {
+                        setForeground(Color.RED);
+                    //} else if (isRolloverEnabled() && model.isRollover()) {
+                    //    setForeground(Color.BLUE);
+                    }
+                } else {
+                    setForeground(Color.GRAY);
+                }
+                super.fireStateChanged();
+            }
+        };
+        radio.setFont(fontPages);
+        radio.setForeground(Color.BLUE);
+        radio.setUI(LINKVIEW_RADIOBUTTON_UI);
+        if (target == current) {
+            radio.setSelected(true);
+        }
+        radio.addActionListener(e -> {
+            currentPage = target;
+            initLinkBox(itemsPerPage, target);
+        });
+        return radio;
+    }
+    
+    /**
+     * 
+     * @param itemsPerPage Cantidad de filas a mostrar por pagina
+     * @param currentPageIndex 
+     */
+    private void initLinkBox(final int itemsPerPage, final int currentPageIndex) {
+        //assert currentPageIndex > 0;
+        sorter.setRowFilter(makeRowFilter(itemsPerPage, currentPageIndex - 1));
+
+        int startPageIndex = currentPageIndex - LR_PAGE_SIZE;
+        if (startPageIndex <= 0) {
+            startPageIndex = 1;
+        }
+
+//#if 0 //BUG
+        //int maxPageIndex = (model.getRowCount() / itemsPerPage) + 1;
+//#else
+        /* "maxPageIndex" gives one blank page if the module of the division is not zero.
+         *   pointed out by erServi
+         * e.g. rowCount=100, maxPageIndex=100
+         */
+        int rowCount = getTableModel().getRowCount();
+        
+        int v = rowCount % itemsPerPage == 0 ? 0 : 1;
+        int maxPageIndex = rowCount / itemsPerPage + v;
+//#endif
+        int endPageIndex = currentPageIndex + LR_PAGE_SIZE - 1;
+        if (endPageIndex > maxPageIndex) {
+            endPageIndex = maxPageIndex;
+        }
+
+        box.removeAll();
+        if (startPageIndex >= endPageIndex) {
+            //if I only have one page, Y don't want to see pagination buttons
+            //suggested by erServi
+            return;
+        }
+
+        ButtonGroup bg = new ButtonGroup();
+        JRadioButton first = makePrevNextRadioButton(itemsPerPage, 1, "|<", currentPageIndex > 1);
+        box.add(first);
+        bg.add(first);
+
+        JRadioButton prev = makePrevNextRadioButton(itemsPerPage, currentPageIndex - 1, "<", currentPageIndex > 1);
+        box.add(prev);
+        bg.add(prev);
+
+        box.add(Box.createHorizontalGlue());
+        for (int i = startPageIndex; i <= endPageIndex; i++) {
+            JRadioButton c = makeRadioButton(itemsPerPage, currentPageIndex, i);
+            box.add(c);
+            bg.add(c);
+        }
+        box.add(Box.createHorizontalGlue());
+
+        JRadioButton next = makePrevNextRadioButton(itemsPerPage, currentPageIndex + 1, ">", currentPageIndex < maxPageIndex);
+        box.add(next);
+        bg.add(next);
+
+        JRadioButton last = makePrevNextRadioButton(itemsPerPage, maxPageIndex, ">|", currentPageIndex < maxPageIndex);
+        box.add(last);
+        bg.add(last);
+
+        box.revalidate();
+        box.repaint();
     }
 
     /**
@@ -44,10 +242,6 @@ public class LazyJTable<T> extends javax.swing.JPanel {
 
         jSPlistData = new javax.swing.JScrollPane();
         jTlistData = new javax.swing.JTable();
-        jBfirst = new javax.swing.JButton();
-        jBprev = new javax.swing.JButton();
-        jBnext = new javax.swing.JButton();
-        jBlast = new javax.swing.JButton();
 
         jTlistData.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -62,50 +256,22 @@ public class LazyJTable<T> extends javax.swing.JPanel {
         ));
         jSPlistData.setViewportView(jTlistData);
 
-        jBfirst.setText("<<");
-
-        jBprev.setText("<");
-
-        jBnext.setText(">");
-
-        jBlast.setText(">>");
-
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jSPlistData)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(25, 25, 25)
-                .addComponent(jBfirst)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jBprev)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jBnext)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jBlast)
-                .addGap(28, 28, 28))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jSPlistData, javax.swing.GroupLayout.DEFAULT_SIZE, 255, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jBfirst)
-                    .addComponent(jBprev)
-                    .addComponent(jBnext)
-                    .addComponent(jBlast))
-                .addContainerGap())
+                .addGap(45, 45, 45))
         );
     }// </editor-fold>//GEN-END:initComponents
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jBfirst;
-    private javax.swing.JButton jBlast;
-    private javax.swing.JButton jBnext;
-    private javax.swing.JButton jBprev;
     private javax.swing.JScrollPane jSPlistData;
     private javax.swing.JTable jTlistData;
     // End of variables declaration//GEN-END:variables
@@ -133,6 +299,22 @@ public class LazyJTable<T> extends javax.swing.JPanel {
     public void setListData(List<T> listData) {
         getTableModel().setListElements(listData);
         getTableModel().fireTableDataChanged();
+    }
+
+    public Font getFontPages() {
+        return fontPages;
+    }
+
+    public void setFontPages(Font fontPages) {
+        this.fontPages = fontPages;
+    }
+
+    public int getSizeData() {
+        return sizeData;
+    }
+
+    public void setSizeData(int sizeData) {
+        this.sizeData = sizeData;
     }
     
 }
