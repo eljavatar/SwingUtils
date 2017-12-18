@@ -545,7 +545,8 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
     private void setTextData(Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Method methodGetFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, JTextComponent jTextComponent, String pattern) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
         if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
             if (getTextFromComponent(jTextComponent).isEmpty()) {
-                fieldModel.set(objectModelBean, null);
+                methodSetFieldModel.invoke(objectModelBean, (Object) null);
+                //fieldModel.set(objectModelBean, null);
             } else {
                 insertIntoFieldModelFromTextComponent(fieldModel, typeFieldModel, methodSetFieldModel, objectModelBean, jTextComponent, pattern);
             }
