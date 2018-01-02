@@ -49,7 +49,7 @@ import javax.swing.table.TableRowSorter;
  */
 public class LazyJTable<T> extends javax.swing.JPanel {
 
-    private static final String PAGINATOR_FILTER = "filter";
+    private static final String PAGINATOR_FILTER = "paginator";
     private static final String GLOBAL_FILTER = "global";
     private static final int LR_PAGE_SIZE = 5;
     private static final LinkViewRadioButtonUI LINKVIEW_RADIOBUTTON_UI = new LinkViewRadioButtonUI();
@@ -112,8 +112,8 @@ public class LazyJTable<T> extends javax.swing.JPanel {
             
             jTFglobalFilter.addKeyListener(new java.awt.event.KeyAdapter() {
                 @Override
-                public void keyTyped(java.awt.event.KeyEvent evt) {
-                    jTFfiltroKeyTyped(evt);
+                public void keyReleased(KeyEvent e) {
+                    filtro();
                 }
             });
             
@@ -133,18 +133,14 @@ public class LazyJTable<T> extends javax.swing.JPanel {
         updateUI();
     }
     
-    private void jTFfiltroKeyTyped(java.awt.event.KeyEvent evt) {                                   
-        jTFglobalFilter.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyTyped(final KeyEvent e) {
-                filtro();
-            }
-        });
-    }
-    
     public void filtro() {
         String filtro = "(?i)" + jTFglobalFilter.getText();
         int columna = jCBcolumnFilter.getSelectedIndex() - 1;
+        
+        if (columna < 0) {
+            SwingComponentsUtils.mostrarMensaje(this, "Debe seleccionar una columna para filtrar", "Mensaje de error", SwingComponentsUtils.ERROR);
+            return;
+        }
         
         mapFilters.put(GLOBAL_FILTER, RowFilter.regexFilter(filtro, columna));
         
