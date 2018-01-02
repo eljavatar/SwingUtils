@@ -9,7 +9,7 @@ public class StringUtils {
     /**
      * Función para convertir en mayúsculas la primera letra de cada palabra en una línea de texto
      *
-     * @param str recibe el texto a convertir
+     * @param str Recibe el texto a convertir
      * @return el texto convertido
      */
     public static String capitalizeEachWord(String str) {
@@ -28,7 +28,7 @@ public class StringUtils {
     /**
      * Función para convertir en mayúscula la primera letra de un String
      *
-     * @param str recibe el a convertir
+     * @param str Recibe el a convertir
      * @return el texto convertido
      */
     public static String capitalize(String str) {
@@ -42,8 +42,8 @@ public class StringUtils {
     
     /**
      * 
-     * @param str
-     * @return 
+     * @param str Recibe la cadena a validar
+     * @return <code>true</code> si es <code>null</code> o es una cadena vacía
      */
     public static boolean isEmpty(String str) {
         return str == null || str.isEmpty();

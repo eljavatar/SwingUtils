@@ -39,7 +39,9 @@ public class ComboBoxModelGeneric<E> extends AbstractListModel<E> implements Mut
     /**
      * 
      * @param isSynchronized Define si la lista de elementos será una colección sincronizada
-     * @param needDetectConcurrentModifications 
+     * @param needDetectConcurrentModifications En caso de que sea una colección sincronizada,
+     *      define si necesita detectar modificaciones concurrentes, ya que de acuerdo a esta
+     *      opción, se decide cuál será la implementacion óptima para crear la lista de datos
      */
     public ComboBoxModelGeneric(boolean isSynchronized, boolean needDetectConcurrentModifications) {
         this(true, isSynchronized, needDetectConcurrentModifications);

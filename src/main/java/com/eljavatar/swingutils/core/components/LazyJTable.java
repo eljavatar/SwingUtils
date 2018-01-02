@@ -15,17 +15,28 @@
  */
 package com.eljavatar.swingutils.core.components;
 
+import com.eljavatar.swingutils.core.componentsutils.JComboBoxUtils;
+import com.eljavatar.swingutils.core.componentsutils.SwingComponentsUtils;
 import com.eljavatar.swingutils.core.modelcomponents.TableModelGeneric;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
 import javax.swing.ButtonModel;
+import javax.swing.JComboBox;
 import javax.swing.JRadioButton;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.RowFilter;
 import javax.swing.table.TableRowSorter;
 
@@ -34,55 +45,117 @@ import javax.swing.table.TableRowSorter;
  * https://www.roseindia.net/tutorial/java/swing/javaPagination.html
  * https://gist.github.com/aterai/7261520
  * @author Andres Mauricio (http://www.eljavatar.com)
- * @param <T>
+ * @param <T> Tipo de dato del modelo de datos del JTable
  */
 public class LazyJTable<T> extends javax.swing.JPanel {
 
+    private static final String PAGINATOR_FILTER = "filter";
+    private static final String GLOBAL_FILTER = "global";
     private static final int LR_PAGE_SIZE = 5;
     private static final LinkViewRadioButtonUI LINKVIEW_RADIOBUTTON_UI = new LinkViewRadioButtonUI();
     private final Box box = Box.createHorizontalBox();
     private TableRowSorter<TableModelGeneric> sorter;
     private Font fontPages;
     private int sizeData;
-    private int currentPage;
-    private int pageSize;
+    private LazyJTableSettings settings;
+    private JTextField jTFglobalFilter;
+    private final LinkedList<RowFilter<TableModelGeneric, Integer>> listFilters = new LinkedList<>();
+    private final Map<String, RowFilter> mapFilters = new HashMap<>();
+    private JComboBox jCBcolumnFilter;
     
     /**
      * Creates new form LazyJTable
      */
     public LazyJTable() {
         initComponents();
+        
+        settings = new LazyJTableSettings();
+        
+        this.fontPages = getFont();
+    }
+    
+    public LazyJTable(LazyJTableSettings settings) {
+        initComponents();
+        this.settings = settings;
         this.fontPages = getFont();
     }
     
     /**
      * 
-     * @param itemsPerPage
-     * @param currentPageIndex 
+     * @param itemsPerPage Cantidad de elementos por página
+     * @param currentPageIndex Página actual en la que se está ubicado
      */
     public void initLazy(int itemsPerPage, int currentPageIndex) {
+        Objects.requireNonNull(settings, "Se requiere de una configuracion");
+        
         this.sorter = new TableRowSorter<>(getTableModel());
         
         this.jTlistData.setRowSorter(sorter);
         
-        this.currentPage = currentPageIndex;
-        this.pageSize = itemsPerPage;
+        this.settings.setCurrentPage(currentPageIndex);
+        this.settings.setPageSize(itemsPerPage);
         initLinkBox(itemsPerPage, currentPageIndex);
         
         this.setLayout(new BorderLayout());
+        
+        
         this.box.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         add(box, BorderLayout.SOUTH);
+        
+        if (settings.isAddGlobalFilter()) {
+            Box boxFiltro = Box.createHorizontalBox();
+            boxFiltro.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
+            
+            jTFglobalFilter = new JTextField();
+            jTFglobalFilter.setFont(fontPages);
+            SwingComponentsUtils.setPlaceholder("Ingrese un criterio de filtro...", jTFglobalFilter);
+            
+            jTFglobalFilter.addKeyListener(new java.awt.event.KeyAdapter() {
+                @Override
+                public void keyTyped(java.awt.event.KeyEvent evt) {
+                    jTFfiltroKeyTyped(evt);
+                }
+            });
+            
+            jCBcolumnFilter = new JComboBox<>();
+            jCBcolumnFilter.setFont(fontPages);
+            JComboBoxUtils.setProperties(jCBcolumnFilter, Arrays.asList(getTableModel().getTitleColumns()), "- Seleccione una columna -");
+            
+            boxFiltro.removeAll();
+            boxFiltro.add(jCBcolumnFilter);
+            boxFiltro.add(jTFglobalFilter);
+            
+            add(boxFiltro, BorderLayout.NORTH);
+        }
         add(jSPlistData);
         
         validate();
         updateUI();
     }
     
+    private void jTFfiltroKeyTyped(java.awt.event.KeyEvent evt) {                                   
+        jTFglobalFilter.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyTyped(final KeyEvent e) {
+                filtro();
+            }
+        });
+    }
+    
+    public void filtro() {
+        String filtro = "(?i)" + jTFglobalFilter.getText();
+        int columna = jCBcolumnFilter.getSelectedIndex() - 1;
+        
+        mapFilters.put(GLOBAL_FILTER, RowFilter.regexFilter(filtro, columna));
+        
+        updateLazy();
+    }
+    
     /**
      * 
      */
     public void updateLazy() {
-        initLinkBox(pageSize, currentPage);
+        initLinkBox(this.settings.getPageSize(), this.settings.getCurrentPage());
         
         validate();
         updateUI();
@@ -119,7 +192,7 @@ public class LazyJTable<T> extends javax.swing.JPanel {
         radio.setFont(fontPages);
         radio.setEnabled(flag);
         radio.addActionListener(e -> {
-            currentPage = target;
+            this.settings.setCurrentPage(target);
             initLinkBox(itemsPerPage, target);
         });
         return radio;
@@ -158,7 +231,7 @@ public class LazyJTable<T> extends javax.swing.JPanel {
             radio.setSelected(true);
         }
         radio.addActionListener(e -> {
-            currentPage = target;
+            this.settings.setCurrentPage(target);
             initLinkBox(itemsPerPage, target);
         });
         return radio;
@@ -171,7 +244,16 @@ public class LazyJTable<T> extends javax.swing.JPanel {
      */
     private void initLinkBox(final int itemsPerPage, final int currentPageIndex) {
         //assert currentPageIndex > 0;
-        sorter.setRowFilter(makeRowFilter(itemsPerPage, currentPageIndex - 1));
+        //sorter.setRowFilter(makeRowFilter(itemsPerPage, currentPageIndex - 1));
+        
+        mapFilters.put(PAGINATOR_FILTER, makeRowFilter(itemsPerPage, currentPageIndex - 1));
+        listFilters.clear();
+        mapFilters.entrySet().forEach((entry) -> {
+            listFilters.add(entry.getValue());
+        });
+        
+        RowFilter filterAnd = RowFilter.andFilter(listFilters);
+        sorter.setRowFilter(filterAnd);
 
         int startPageIndex = currentPageIndex - LR_PAGE_SIZE;
         if (startPageIndex <= 0) {
@@ -264,9 +346,7 @@ public class LazyJTable<T> extends javax.swing.JPanel {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(jSPlistData, javax.swing.GroupLayout.DEFAULT_SIZE, 255, Short.MAX_VALUE)
-                .addGap(45, 45, 45))
+            .addComponent(jSPlistData, javax.swing.GroupLayout.DEFAULT_SIZE, 300, Short.MAX_VALUE)
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -315,6 +395,14 @@ public class LazyJTable<T> extends javax.swing.JPanel {
 
     public void setSizeData(int sizeData) {
         this.sizeData = sizeData;
+    }
+
+    public LazyJTableSettings getSettings() {
+        return settings;
+    }
+
+    public void setSettings(LazyJTableSettings settings) {
+        this.settings = settings;
     }
     
 }

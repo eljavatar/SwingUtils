@@ -1,5 +1,6 @@
 package com.eljavatar.swingutils.core.componentsutils;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
 import java.awt.Frame;
@@ -9,6 +10,7 @@ import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.text.JTextComponent;
+import org.jdesktop.swingx.prompt.PromptSupport;
 
 /**
  *
@@ -77,6 +79,13 @@ public class SwingComponentsUtils {
             parentFrame = (Frame) parentWindow;
         }
         return parentFrame;
+    }
+    
+    public static void setPlaceholder(String placeholder, JTextComponent textComponent) {
+        PromptSupport.setPrompt(placeholder, textComponent);
+        PromptSupport.setFocusBehavior(PromptSupport.FocusBehavior.SHOW_PROMPT, textComponent);
+        PromptSupport.setFontStyle(Font.ITALIC, textComponent);
+        PromptSupport.setForeground(Color.GRAY, textComponent);
     }
     
 }

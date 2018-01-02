@@ -15,10 +15,17 @@ import javax.swing.table.TableModel;
 public class JTableUtils {
     
     public static void setProperties(final JTable jTable, Font fontTitle, TableModel tableModel) {
-        setEstilosForTitulos(jTable, fontTitle);
+        setEstilosForTitulosDefault(jTable, fontTitle);
         setPropiedadesGenericsForTable(jTable);
         jTable.setModel(tableModel);
     }
+    
+//    public static void setPropertiesWithFilter(final JTable jTable, Font fontTitle, Font fontFilter, TableModel tableModel, int... colwidth) {
+//        setEstilosForTitulosWithFilter(jTable, fontTitle, fontFilter);
+//        setPropiedadesGenericsForTable(jTable);
+//        jTable.setModel(tableModel);
+//        setAnchoColumnas(jTable, jTable.getWidth() - 1, jTable.getColumnCount(), colwidth);
+//    }
     
     public static void setProperties(final JTable jTable, Font fontTitle, TableModel tableModel, int... colwidth) {
         setProperties(jTable, fontTitle, tableModel);
@@ -30,14 +37,24 @@ public class JTableUtils {
         setAnchoColumnas(jTable, widthTable, colcount, colwidth);
     }
     
-    public static void setEstilosForTitulos(final JTable jTable, Font fontTitle) {
+    public static void setEstilosForTitulosDefault(final JTable jTable, Font fontTitle) {
         JTableHeader th = jTable.getTableHeader();
         th.setFont(fontTitle);
 
         TableCellRenderer tcr = jTable.getTableHeader().getDefaultRenderer();
-        TitlesTableRendererDefault editortitulos = new TitlesTableRendererDefault(tcr);
-        th.setDefaultRenderer(editortitulos);
+        TitlesTableRendererDefault renderer = new TitlesTableRendererDefault(tcr);
+        th.setDefaultRenderer(renderer);
     }
+    
+//    public static void setEstilosForTitulosWithFilter(final JTable jTable, Font fontTitle, Font fontFilter) {
+//        JTableHeader th = jTable.getTableHeader();
+//        th.setFont(fontTitle);
+//
+//        TableCellRenderer tcr = jTable.getTableHeader().getDefaultRenderer();
+//        TitlesTableRendererFilter renderer = new TitlesTableRendererFilter(tcr, fontFilter);
+//        th.setFocusable(true);
+//        th.setDefaultRenderer(renderer);
+//    }
     
     public static void setPropiedadesGenericsForTable(final JTable jTable) {
         jTable.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
