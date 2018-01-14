@@ -23,12 +23,14 @@ package com.eljavatar.swingutils.core.components;
 public class LazyJTableSettings {
 
     private boolean addGlobalFilter;
+    private boolean lazy;
     private int sizeData;
     private int currentPage;
     private int pageSize;
     
     public LazyJTableSettings() {
         this.addGlobalFilter = true;
+        this.lazy = false;
     }
 
     public boolean isAddGlobalFilter() {
@@ -37,6 +39,14 @@ public class LazyJTableSettings {
 
     public void setAddGlobalFilter(boolean addGlobalFilter) {
         this.addGlobalFilter = addGlobalFilter;
+    }
+
+    public boolean isLazy() {
+        return lazy;
+    }
+
+    public void setLazy(boolean lazy) {
+        this.lazy = lazy;
     }
 
     public int getSizeData() {

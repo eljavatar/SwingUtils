@@ -1,6 +1,7 @@
 package com.eljavatar.swingutils.core.modelcomponents;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -15,6 +16,7 @@ public abstract class TableModelGeneric<E> extends AbstractTableModel implements
 
     private final Class[] typeColumns;
     private final String[] titleColumns;
+    private List<ObjectFilter> filtersProperties;
     private List<E> listElements;
     private boolean isSynchronized;
     private boolean needDetectConcurrentModifications;
@@ -33,6 +35,17 @@ public abstract class TableModelGeneric<E> extends AbstractTableModel implements
      * 
      * @param typeColumns Tipos de datos de cada columna del JTable
      * @param titleColumns Títulos de las columnas del JTable
+     * @param filtersProperties Nombres que tendrán los filtros de las columnas del JTable
+     * @param listElements Lista de elementos que tendrá el Modelo del JTable
+     */
+    public TableModelGeneric(Class[] typeColumns, String[] titleColumns, List<ObjectFilter> filtersProperties, List<E> listElements) {
+        this(typeColumns, titleColumns, filtersProperties, listElements, false, true);
+    }
+    
+    /**
+     * 
+     * @param typeColumns Tipos de datos de cada columna del JTable
+     * @param titleColumns Títulos de las columnas del JTable
      * @param listElements Lista de elementos que tendrá el Modelo del JTable
      * @param isSynchronized Define si la lista de elementos será una colección sincronizada
      * @param needDetectConcurrentModifications En caso de que sea una colección sincronizada,
@@ -40,8 +53,24 @@ public abstract class TableModelGeneric<E> extends AbstractTableModel implements
      *      opción, se decide cuál será la implementacion óptima para crear la lista de datos
      */
     public TableModelGeneric(Class[] typeColumns, String[] titleColumns, List<E> listElements, boolean isSynchronized, boolean needDetectConcurrentModifications) {
+        this(typeColumns, titleColumns, new ArrayList<>(), listElements, false, true);
+    }
+    
+    /**
+     * 
+     * @param typeColumns Tipos de datos de cada columna del JTable
+     * @param titleColumns Títulos de las columnas del JTable
+     * @param filtersProperties Nombres que tendrán los filtros de las columnas del JTable
+     * @param listElements Lista de elementos que tendrá el Modelo del JTable
+     * @param isSynchronized Define si la lista de elementos será una colección sincronizada
+     * @param needDetectConcurrentModifications En caso de que sea una colección sincronizada,
+     *      define si necesita detectar modificaciones concurrentes, ya que de acuerdo a esta
+     *      opción, se decide cuál será la implementacion óptima para crear la lista de datos
+     */
+    public TableModelGeneric(Class[] typeColumns, String[] titleColumns, List<ObjectFilter> filtersProperties, List<E> listElements, boolean isSynchronized, boolean needDetectConcurrentModifications) {
         this.typeColumns = typeColumns;
         this.titleColumns = titleColumns;
+        this.filtersProperties = filtersProperties;
         if (this.isSynchronized) {
             this.listElements = this.needDetectConcurrentModifications ? Collections.synchronizedList(listElements) : new CopyOnWriteArrayList<>(listElements);
         } else {
@@ -100,6 +129,10 @@ public abstract class TableModelGeneric<E> extends AbstractTableModel implements
 
     public String[] getTitleColumns() {
         return titleColumns;
+    }
+
+    public List<ObjectFilter> getFiltersProperties() {
+        return filtersProperties;
     }
     
 }

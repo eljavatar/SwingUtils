@@ -21,8 +21,8 @@ import com.eljavatar.swingutils.core.modelcomponents.TableModelGeneric;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -44,6 +44,8 @@ import javax.swing.table.TableRowSorter;
  * https://java-swing-tips.blogspot.com.co/2008/03/jtable-pagination-example-using.html
  * https://www.roseindia.net/tutorial/java/swing/javaPagination.html
  * https://gist.github.com/aterai/7261520
+ * 
+ * http://www.logicbig.com/tutorials/core-java-tutorial/swing/jtable-pagination/
  * @author Andres Mauricio (http://www.eljavatar.com)
  * @param <T> Tipo de dato del modelo de datos del JTable
  */
@@ -98,7 +100,6 @@ public class LazyJTable<T> extends javax.swing.JPanel {
         
         this.setLayout(new BorderLayout());
         
-        
         this.box.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         add(box, BorderLayout.SOUTH);
         
@@ -151,7 +152,8 @@ public class LazyJTable<T> extends javax.swing.JPanel {
      * 
      */
     public void updateLazy() {
-        initLinkBox(this.settings.getPageSize(), this.settings.getCurrentPage());
+        //initLinkBox(this.settings.getPageSize(), this.settings.getCurrentPage());
+        initLinkBox(this.settings.getPageSize(), 1);
         
         validate();
         updateUI();
@@ -242,6 +244,17 @@ public class LazyJTable<T> extends javax.swing.JPanel {
         //assert currentPageIndex > 0;
         //sorter.setRowFilter(makeRowFilter(itemsPerPage, currentPageIndex - 1));
         
+        int rowCount;
+        if (this.settings.isLazy()) {
+            int first = (itemsPerPage * (currentPageIndex - 1)) + 1;
+            
+            load(first, itemsPerPage);
+            
+            rowCount = sizeData;
+        } else {
+            rowCount = getTableModel().getRowCount();
+        }
+        
         mapFilters.put(PAGINATOR_FILTER, makeRowFilter(itemsPerPage, currentPageIndex - 1));
         listFilters.clear();
         mapFilters.entrySet().forEach((entry) -> {
@@ -263,7 +276,8 @@ public class LazyJTable<T> extends javax.swing.JPanel {
          *   pointed out by erServi
          * e.g. rowCount=100, maxPageIndex=100
          */
-        int rowCount = getTableModel().getRowCount();
+        
+        
         
         int v = rowCount % itemsPerPage == 0 ? 0 : 1;
         int maxPageIndex = rowCount / itemsPerPage + v;
@@ -307,6 +321,15 @@ public class LazyJTable<T> extends javax.swing.JPanel {
 
         box.revalidate();
         box.repaint();
+        
+        if (this.settings.isLazy()) {
+            validate();
+            updateUI();
+        }
+    }
+    
+    public List<T> load(int first, int pageSize) {
+        throw new UnsupportedOperationException("Método no implementado");
     }
 
     /**
