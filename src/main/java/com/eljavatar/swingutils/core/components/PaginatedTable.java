@@ -87,7 +87,7 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
     /**
      * Modelo de datos del JTable
      */
-    private TableModelGeneric tableModelGeneric;
+    private TableModelGeneric<T> tableModelGeneric;
     
     /**
      * Cantidad máxima de botones a mostrar en el paginador
@@ -351,14 +351,17 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
             dataProvider.getRows(startIndex, endIndex, filters);
         }
         
-//        int totalRows = lazy ? lazyDataProvider.getRowCount() : dataProvider.getTotalRowCount();
-//        if (endIndex > totalRows) {
-//            endIndex = totalRows;
-//        }
-        
         List<T> rows = lazy ? lazyDataProvider.getListData() : dataProvider.getListDataFiltered();
         tableModelGeneric.setListElements(rows);
         tableModelGeneric.fireTableDataChanged();
+    }
+    
+    public void clearAndBackToPageOne() {
+        filters.clear();
+        jCBcolumnFilter.setSelectedItem(null);
+        jTFglobalFilter.setText(null);
+        currentPage = 1;
+        paginate();
     }
 
     /**
@@ -408,7 +411,7 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
         return dataTable;
     }
 
-    public TableModelGeneric getTableModelGeneric() {
+    public TableModelGeneric<T> getTableModelGeneric() {
         return tableModelGeneric;
     }
 
