@@ -61,4 +61,8 @@ public abstract class PaginationDataProvider<T> implements Serializable {
         throw new UnsupportedOperationException("Rows loading is not implemented.");
     }
     
+    public void resetListData() {
+        throw new UnsupportedOperationException("Rows reset is not implemented.");
+    }
+    
 }
