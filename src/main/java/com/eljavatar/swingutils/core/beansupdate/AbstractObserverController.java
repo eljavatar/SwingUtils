@@ -40,6 +40,8 @@ import javax.swing.JComboBox;
 import javax.swing.JToggleButton;
 import com.eljavatar.swingutils.core.annotations.ToggleButtonView;
 import com.eljavatar.swingutils.core.modelcomponents.TableModelGeneric;
+import java.beans.IntrospectionException;
+import java.beans.PropertyDescriptor;
 import javax.swing.JTable;
 
 /**
@@ -378,6 +380,8 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                         Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "NoSuchMethodException", ex);
                     } catch (NoSuchFieldException ex) {
                         Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "NoSuchFieldException", ex);
+                    } catch (IntrospectionException ex) {
+                        Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "IntrospectionException", ex);
                     }
                 }
             }
@@ -399,24 +403,21 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
      * @throws IllegalAccessException
      * @throws InvocationTargetException 
      */
-    private void asignValue(Field fieldView, String nameComponentView, Class typeComponentView, Field fieldModel, Class typeFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, V view) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException, SecurityException, NoSuchMethodException {
+    private void asignValue(Field fieldView, String nameComponentView, Class typeComponentView, Field fieldModel, Class typeFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, V view) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException, SecurityException, NoSuchMethodException, IntrospectionException {
         Object objectComponentView = fieldView.get(view);
         if (objectComponentView == null) {
             throw new NullPointerException("Component in View " + nameComponentView + " is null");
         }
         
+        PropertyDescriptor propertyDescriptor = new PropertyDescriptor(fieldModel.getName(), fieldModel.getDeclaringClass());
         // Obtenemos el metodo get y set del atributo del modelo o propiedad en el controlador
-        Method methodSetFieldModel = null;
-        Method methodGetFieldModel = null;
-        try {
-            methodSetFieldModel = objectModelBean.getClass().getMethod("set" + StringUtils.capitalize(fieldModel.getName()) , typeFieldModel);
-        } catch (NoSuchMethodException ex) {
+        Method methodSetFieldModel = propertyDescriptor.getWriteMethod();
+        Method methodGetFieldModel = propertyDescriptor.getReadMethod();
+        if (methodSetFieldModel == null) {
             throw new NoSuchMethodException("El atributo " + fieldModel.getName() + " no tiene metodo público set");
         }
-        try {
-            methodGetFieldModel = objectModelBean.getClass().getMethod("get" + StringUtils.capitalize(fieldModel.getName()) , (Class<?>[]) null);
-        } catch (NoSuchMethodException ex) {
-            throw new NoSuchMethodException("El atributo " + fieldModel.getName() + " no tiene metodo público get");
+        if (methodGetFieldModel == null) {
+            throw new NoSuchMethodException("El atributo " + fieldModel.getName() + " no tiene metodo público set");
         }
 
         if (fieldView.isAnnotationPresent(TextView.class)) {
