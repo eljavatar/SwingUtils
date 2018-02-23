@@ -32,14 +32,16 @@ import com.eljavatar.swingutils.core.annotations.DateTextView;
 import com.eljavatar.swingutils.core.annotations.NumberTextView;
 import com.eljavatar.swingutils.core.annotations.PropertyController;
 import com.eljavatar.swingutils.core.annotations.TableView;
-import java.text.DecimalFormat;
 import java.util.Iterator;
 import java.util.List;
 import javax.swing.ComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JToggleButton;
 import com.eljavatar.swingutils.core.annotations.ToggleButtonView;
+import com.eljavatar.swingutils.core.componentsutils.SwingComponentsUtils;
 import com.eljavatar.swingutils.core.modelcomponents.TableModelGeneric;
+import com.ibm.icu.text.DecimalFormat;
+import java.awt.Component;
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import javax.swing.JTable;
@@ -55,6 +57,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
     private C controller;
     private V view;
     private AbstractObservable<C> observable;
+    private boolean hasMessages;
     
     public AbstractObserverController() {
         // Constructor vacio por defecto
@@ -66,6 +69,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
     
     @Override
     public void update(Observable o, Object arg) {
+        this.hasMessages = false;
         if (arg instanceof ObjectUpdate) {
             ObjectUpdate objectUpdate = (ObjectUpdate) arg;
             actualizar(controller, view, objectUpdate.getTipoUpdateEnum(), objectUpdate.getComponent(), objectUpdate.getListComponents());
@@ -75,6 +79,10 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         } else {
             throw new IllegalArgumentException("No es un tipo de objeto permitido");
         }
+    }
+    
+    public boolean hasMessages() {
+        return hasMessages;
     }
     
     /**
@@ -572,57 +580,47 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
     private void insertIntoFieldModelFromTextComponent(Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Object objectModelBean, JTextComponent jTextComponent, String pattern) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
         try  {
             if (typeFieldModel == String.class) {
-                //fieldModel.set(objectModelBean, getTextFromComponent(jTextComponent));
                 methodSetFieldModel.invoke(objectModelBean, getTextFromComponent(jTextComponent));
             } else if (typeFieldModel == Character.class || typeFieldModel == char.class) {
-                //fieldModel.set(objectModelBean, getTextFromComponent(jTextComponent).charAt(0));
                 methodSetFieldModel.invoke(objectModelBean, getTextFromComponent(jTextComponent).charAt(0));
             } else if (Number.class.isAssignableFrom(typeFieldModel)) {
                 // https://www.ibm.com/developerworks/library/j-numberformat/index.html
                 DecimalFormat decimalFormat = null;
                 if (pattern != null && !pattern.isEmpty()) {
                     decimalFormat = new DecimalFormat(pattern);
+                    decimalFormat.setParseStrict(true);
                 }
                 if (typeFieldModel == Byte.class || typeFieldModel == byte.class) {
-                    //fieldModel.set(objectModelBean, decimalFormat != null ? Byte.parseByte(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Byte.parseByte(getTextFromComponent(jTextComponent)));
                     methodSetFieldModel.invoke(objectModelBean, decimalFormat != null ? Byte.parseByte(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Byte.parseByte(getTextFromComponent(jTextComponent)));
                 } else if (typeFieldModel == Short.class || typeFieldModel == short.class) {
-                    //fieldModel.set(objectModelBean, decimalFormat != null ? Short.parseShort(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Short.parseShort(getTextFromComponent(jTextComponent)));
                     methodSetFieldModel.invoke(objectModelBean, decimalFormat != null ? Short.parseShort(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Short.parseShort(getTextFromComponent(jTextComponent)));
                 } else if (typeFieldModel == Integer.class || typeFieldModel == int.class) {
-                    //fieldModel.set(objectModelBean, decimalFormat != null ? Integer.parseInt(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Integer.parseInt(getTextFromComponent(jTextComponent)));
                     methodSetFieldModel.invoke(objectModelBean, decimalFormat != null ? Integer.parseInt(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Integer.parseInt(getTextFromComponent(jTextComponent)));
                 } else if (typeFieldModel == Long.class || typeFieldModel == long.class) {
-                    //fieldModel.set(objectModelBean, decimalFormat != null ? Long.parseLong(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Long.parseLong(getTextFromComponent(jTextComponent)));
                     methodSetFieldModel.invoke(objectModelBean, decimalFormat != null ? Long.parseLong(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Long.parseLong(getTextFromComponent(jTextComponent)));
                 } else if (typeFieldModel == Float.class || typeFieldModel == float.class) {
-                    //fieldModel.set(objectModelBean, decimalFormat != null ? Float.parseFloat(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Float.parseFloat(getTextFromComponent(jTextComponent)));
                     methodSetFieldModel.invoke(objectModelBean, decimalFormat != null ? Float.parseFloat(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Float.parseFloat(getTextFromComponent(jTextComponent)));
                 } else if (typeFieldModel == Double.class || typeFieldModel == double.class) {
-                    //fieldModel.set(objectModelBean, decimalFormat != null ? Double.parseDouble(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Double.parseDouble(getTextFromComponent(jTextComponent)));
                     methodSetFieldModel.invoke(objectModelBean, decimalFormat != null ? Double.parseDouble(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()) : Double.parseDouble(getTextFromComponent(jTextComponent)));
                 } else if (typeFieldModel == BigInteger.class) {
                     if (decimalFormat != null) {
                         decimalFormat.setParseBigDecimal(true);
-                        BigDecimal valueParsed = (BigDecimal) decimalFormat.parse(getTextFromComponent(jTextComponent));
-                        //fieldModel.set(objectModelBean, valueParsed.toBigIntegerExact());
-                        methodSetFieldModel.invoke(objectModelBean,  valueParsed.toBigIntegerExact());
+                        //BigDecimal valueParsed = (BigDecimal) decimalFormat.parse(getTextFromComponent(jTextComponent));
+                        BigDecimal valueParsed = new BigDecimal(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString());
+                        methodSetFieldModel.invoke(objectModelBean, valueParsed.toBigIntegerExact());
                     } else {
-                        //fieldModel.set(objectModelBean, new BigInteger(getTextFromComponent(jTextComponent)));
                         methodSetFieldModel.invoke(objectModelBean, new BigInteger(getTextFromComponent(jTextComponent)));
                     }
                 } else if (typeFieldModel == BigDecimal.class) {
                     if (decimalFormat != null) {
                         decimalFormat.setParseBigDecimal(true);
-                        //fieldModel.set(objectModelBean, (BigDecimal) decimalFormat.parse(getTextFromComponent(jTextComponent)));
-                        methodSetFieldModel.invoke(objectModelBean,  (BigDecimal) decimalFormat.parse(getTextFromComponent(jTextComponent)));
+                        //methodSetFieldModel.invoke(objectModelBean, (BigDecimal) decimalFormat.parse(getTextFromComponent(jTextComponent)));
+                        methodSetFieldModel.invoke(objectModelBean, new BigDecimal(decimalFormat.parse(getTextFromComponent(jTextComponent)).toString()));
                     } else {
-                        //fieldModel.set(objectModelBean, new BigDecimal(getTextFromComponent(jTextComponent)));
-                        methodSetFieldModel.invoke(objectModelBean,  new BigDecimal(getTextFromComponent(jTextComponent)));
+                        methodSetFieldModel.invoke(objectModelBean, new BigDecimal(getTextFromComponent(jTextComponent)));
                     }
                 }
             } else if (typeFieldModel == Boolean.class || typeFieldModel == boolean.class) {
-                //fieldModel.set(objectModelBean, Boolean.parseBoolean(getTextFromComponent(jTextComponent)));
                 methodSetFieldModel.invoke(objectModelBean, Boolean.parseBoolean(getTextFromComponent(jTextComponent)));
             } else if (java.util.Date.class.isAssignableFrom(typeFieldModel)) {
                 SimpleDateFormat sdf = new SimpleDateFormat();
@@ -631,35 +629,30 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                     sdf = new SimpleDateFormat(pattern);
                 }
                 if (typeFieldModel == java.sql.Time.class) {
-                    //fieldModel.set(objectModelBean, new java.sql.Time(sdf.parse(getTextFromComponent(jTextComponent)).getTime()));
                     methodSetFieldModel.invoke(objectModelBean,  new java.sql.Time(sdf.parse(getTextFromComponent(jTextComponent)).getTime()));
                 } else if (typeFieldModel == java.sql.Date.class) {
-                    //fieldModel.set(objectModelBean, new java.sql.Date(sdf.parse(getTextFromComponent(jTextComponent)).getTime()));
                     methodSetFieldModel.invoke(objectModelBean,  new java.sql.Date(sdf.parse(getTextFromComponent(jTextComponent)).getTime()));
                 } else if (typeFieldModel == java.sql.Timestamp.class) {
-                    //fieldModel.set(objectModelBean, new java.sql.Timestamp(sdf.parse(getTextFromComponent(jTextComponent)).getTime()));
                     methodSetFieldModel.invoke(objectModelBean,  new java.sql.Timestamp(sdf.parse(getTextFromComponent(jTextComponent)).getTime()));
                 } else {
-                    //fieldModel.set(objectModelBean, sdf.parse(getTextFromComponent(jTextComponent)));
                     methodSetFieldModel.invoke(objectModelBean,  sdf.parse(getTextFromComponent(jTextComponent)));
                 }
             } else if (java.time.temporal.Temporal.class.isAssignableFrom(typeFieldModel)) {
                 DateTimeFormatter formatter = getDateTimeFormatter(typeFieldModel, pattern);
                 if (typeFieldModel == LocalDate.class) {
-                    //fieldModel.set(objectModelBean, LocalDate.parse(getTextFromComponent(jTextComponent), formatter));
                     methodSetFieldModel.invoke(objectModelBean,  LocalDate.parse(getTextFromComponent(jTextComponent), formatter));
                 } else if (typeFieldModel == LocalTime.class) {
-                    //fieldModel.set(objectModelBean, LocalTime.parse(getTextFromComponent(jTextComponent), formatter));
                     methodSetFieldModel.invoke(objectModelBean,  LocalTime.parse(getTextFromComponent(jTextComponent), formatter));
                 } else if (typeFieldModel == LocalDateTime.class) {
-                    //fieldModel.set(objectModelBean, LocalDateTime.parse(getTextFromComponent(jTextComponent), formatter));
                     methodSetFieldModel.invoke(objectModelBean,  LocalDateTime.parse(getTextFromComponent(jTextComponent), formatter));
                 }
             }
         } catch (NumberFormatException ex) {
-            Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "NumberFormatException", ex);
+            SwingComponentsUtils.mostrarMensaje((Component) view, "El valor " + jTextComponent.getText() + " no tiene un formato numérico correcto", "Formato Incorrecto", SwingComponentsUtils.ERROR);
+            this.hasMessages = true;
         } catch (ParseException ex) {
-            Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "ParseException", ex);
+            SwingComponentsUtils.mostrarError((Component) view, "El valor " + jTextComponent.getText() + " no tiene un formato correcto", "Formato Incorrecto");
+            this.hasMessages = true;
         } catch (IllegalArgumentException ex) {
             Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "IllegalArgumentException", ex);
         }
@@ -727,7 +720,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
      * @throws IllegalAccessException 
      */
     private void insertIntoTextComponentFromFieldModel(Field fieldModel, Class typeFieldModel, Method methodGetFieldModel, Object objectModelBean, JTextComponent jTextComponent, String pattern) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
-        String text = getTextFormattedForInsertIntoComponent(fieldModel, typeFieldModel, methodGetFieldModel, objectModelBean, pattern);
+        String text = getTextFormattedForInsertIntoComponent(typeFieldModel, methodGetFieldModel, objectModelBean, pattern);
         if (jTextComponent instanceof JTextField) {
             JTextField jTextField = (JTextField) jTextComponent;
             jTextField.setText(text);
@@ -762,7 +755,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
      * @throws IllegalArgumentException
      * @throws IllegalAccessException 
      */
-    private String getTextFormattedForInsertIntoComponent(Field fieldModel, Class typeFieldModel, Method methodGetFieldModel, Object objectModelBean, String pattern) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+    private String getTextFormattedForInsertIntoComponent(Class typeFieldModel, Method methodGetFieldModel, Object objectModelBean, String pattern) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
         Object object = methodGetFieldModel.invoke(objectModelBean);
         //Object object = fieldModel.get(objectModelBean);
         if (object == null) {

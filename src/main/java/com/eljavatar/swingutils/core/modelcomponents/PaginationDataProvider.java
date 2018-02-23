@@ -14,39 +14,22 @@
  * limitations under the License.
  */
 
-package com.eljavatar.swingutils.core.components;
+package com.eljavatar.swingutils.core.modelcomponents;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 
 /**
  *
  * @author ElJavatar - Andres Mauricio (http://www.eljavatar.com)
  * @param <T>
  */
-public abstract class PaginationDataProvider<T> implements Serializable {
-
-    private int totalRowCount;
-    
-    private List<T> listData;
+public abstract class PaginationDataProvider<T> extends JTableDataProvider<T> implements Serializable {
     
     private List<T> listDataFiltered;
     
-    public int getTotalRowCount() {
-        return totalRowCount;
-    }
-    
-    public void setTotalRowCount(int totalRowCount) {
-        this.totalRowCount = totalRowCount;
-    }
-
-    public List<T> getListData() {
-        return listData;
-    }
-
-    public void setListData(List<T> listData) {
-        this.listData = listData;
+    public PaginationDataProvider() {
+        super();
     }
 
     public List<T> getListDataFiltered() {
@@ -56,11 +39,7 @@ public abstract class PaginationDataProvider<T> implements Serializable {
     public void setListDataFiltered(List<T> listDataFiltered) {
         this.listDataFiltered = listDataFiltered;
     }
-    
-    public List<T> getRows(int startIndex, int endIndex, Map<String, Object> filters) {
-        throw new UnsupportedOperationException("Rows loading is not implemented.");
-    }
-    
+
     public void resetListData() {
         throw new UnsupportedOperationException("Rows reset is not implemented.");
     }

@@ -122,6 +122,16 @@ public abstract class TableModelGeneric<E> extends AbstractTableModel implements
     public void addAllElements(List<E> elements) {
         this.listElements.addAll(elements);
     }
+    
+    public void addRow(E element) {
+        addElement(element);
+        fireTableRowsInserted(this.listElements.size(), this.listElements.size());
+    }
+    
+    public void removeRow(int index) {
+        this.listElements.remove(index);
+        fireTableRowsDeleted(index, index);
+    }
 
     public Class[] getTypeColumns() {
         return typeColumns;

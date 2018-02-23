@@ -51,7 +51,13 @@
             <artifactId>swingx-all</artifactId>
             <version>1.6.5-1</version>
         </dependency>
-
+        
+        <!-- https://mvnrepository.com/artifact/com.ibm.icu/icu4j -->
+        <dependency>
+            <groupId>com.ibm.icu</groupId>
+            <artifactId>icu4j</artifactId>
+            <version>60.2</version>
+        </dependency>
     </dependencies>
     
     <build>

@@ -15,6 +15,9 @@
  */
 package com.eljavatar.swingutils.core.components;
 
+import com.eljavatar.swingutils.core.modelcomponents.PaginationDataProvider;
+import com.eljavatar.swingutils.core.modelcomponents.LazyDataProvider;
+import com.eljavatar.swingutils.core.modelcomponents.JTableDataProvider;
 import com.eljavatar.swingutils.core.componentsutils.JComboBoxUtils;
 import com.eljavatar.swingutils.core.componentsutils.SwingComponentsUtils;
 import com.eljavatar.swingutils.core.modelcomponents.ObjectFilter;
@@ -43,7 +46,6 @@ import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
 import javax.swing.event.TableModelEvent;
 import javax.swing.table.TableModel;
-import javax.swing.table.TableRowSorter;
 
 /**
  * http://www.logicbig.com/tutorials/core-java-tutorial/swing/jtable-pagination/
@@ -99,9 +101,6 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
      */
     private static final String ELLIPSES = "...";
     
-    
-    private TableRowSorter<TableModelGeneric> sorter;
-    
     /**
      * Indica si el JTable cargará los datos de forma perezosa o no
      */
@@ -139,59 +138,36 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
         initComponents();
     }
     
-    private void initProperties(JTable dataTable, PaginationDataProvider<T> dataProvider, int[] pageSizes, int defaultPageSize, boolean globalFilter, Font fontPages, boolean lazy) {
-        this.paginationDataProvider = dataProvider;
+    public PaginatedTable(JTable dataTable, JTableDataProvider<T> dataProvider, int[] pageSizes, int defaultPageSize, boolean globalFilter, Font fontPages) {
+        initComponents();
+        initProperties(dataTable, dataProvider, pageSizes, defaultPageSize, globalFilter, fontPages);
+    }
+    
+    private void initProperties(JTable dataTable, JTableDataProvider<T> dataProvider, int[] pageSizes, int defaultPageSize, boolean globalFilter, Font fontPages) {
+        if (dataProvider instanceof PaginationDataProvider) {
+            this.paginationDataProvider = (PaginationDataProvider) dataProvider;
+            this.lazy = false;
+        } else if (dataProvider instanceof LazyDataProvider) {
+            this.lazyDataProvider = (LazyDataProvider) dataProvider;
+            this.lazy = true;
+        }
         this.pageSizes = pageSizes;
         this.currentPageSize = defaultPageSize;
         this.dataTable = dataTable;
-        this.lazy = lazy;
         this.globalFilter = globalFilter;
         this.fontPages = fontPages;
         this.filters = new HashMap<>();
     }
     
-    private void initProperties(JTable dataTable, LazyDataProvider<T> lazyDataProvider, int[] pageSizes, int defaultPageSize, boolean globalFilter, Font fontPages, boolean lazy) {
-        this.lazyDataProvider = lazyDataProvider;
-        this.pageSizes = pageSizes;
-        this.currentPageSize = defaultPageSize;
-        this.dataTable = dataTable;
-        this.lazy = lazy;
-        this.globalFilter = globalFilter;
-        this.fontPages = fontPages;
-        this.filters = new HashMap<>();
-    }
-
-    public PaginatedTable(JTable dataTable, PaginationDataProvider<T> dataProvider, int[] pageSizes, int defaultPageSize, boolean globalFilter, Font fontPages) {
-        initProperties(dataTable, dataProvider, pageSizes, defaultPageSize, globalFilter, fontPages, false);
-    }
-    
-    public PaginatedTable(JTable dataTable, LazyDataProvider<T> lazyDataProvider, int[] pageSizes, int defaultPageSize, boolean globalFilter, Font fontPages) {
-        initProperties(dataTable, lazyDataProvider, pageSizes, defaultPageSize, globalFilter, fontPages, true);
-    }
-    
-    public void decorateAndSet(JTable table, PaginationDataProvider<T> dataProvider, int[] pageSizes, int defaultPageSize, boolean globalFilter, Font fontPages) {
-        initProperties(dataTable, dataProvider, pageSizes, defaultPageSize, globalFilter, fontPages, false);
+    public void decorateAndSet(JTableDataProvider<T> dataProvider, int[] pageSizes, int defaultPageSize, boolean globalFilter, Font fontPages) {
+        initProperties(dataTable, dataProvider, pageSizes, defaultPageSize, globalFilter, fontPages);
         this.removeAll();
         this.init();
         this.revalidate();
         this.repaint();
     }
     
-    public void decorateAndSet(JTable table, LazyDataProvider<T> lazyDataProvider, int[] pageSizes, int defaultPageSize, boolean globalFilter, Font fontPages) {
-        initProperties(dataTable, lazyDataProvider, pageSizes, defaultPageSize, globalFilter, fontPages, true);
-        this.removeAll();
-        this.init();
-        this.revalidate();
-        this.repaint();
-    }
-    
-    public static <T> PaginatedTable<T> decorate(JTable table, PaginationDataProvider<T> dataProvider, int[] pageSizes, int defaultPageSize, boolean globalFilter, Font fontPages) {
-        PaginatedTable<T> decorator = new PaginatedTable<>(table, dataProvider, pageSizes, defaultPageSize, globalFilter, fontPages);
-        decorator.init();
-        return decorator;
-    }
-    
-    public static <T> PaginatedTable<T> decorate(JTable table, LazyDataProvider<T> dataProvider, int[] pageSizes, int defaultPageSize, boolean globalFilter, Font fontPages) {
+    public static <T> PaginatedTable<T> decorate(JTable table, JTableDataProvider<T> dataProvider, int[] pageSizes, int defaultPageSize, boolean globalFilter, Font fontPages) {
         PaginatedTable<T> decorator = new PaginatedTable<>(table, dataProvider, pageSizes, defaultPageSize, globalFilter, fontPages);
         decorator.init();
         return decorator;
@@ -223,11 +199,6 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
     }
     
     private void addGlobalFilter() {
-//        if (lazy) {
-//            this.sorter = new TableRowSorter<>(tableModelGeneric);
-//            this.dataTable.setRowSorter(sorter);
-//        }
-        
         if (globalFilter) {
             Box boxFiltro = Box.createHorizontalBox();
             boxFiltro.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
@@ -310,7 +281,7 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
     
     private void refreshPageButtonPanel(TableModelEvent tme) {
         pageLinkPanel.removeAll();
-        int totalRows = lazy ? lazyDataProvider.getRowCount() : paginationDataProvider.getTotalRowCount();
+        int totalRows = lazy ? lazyDataProvider.getRowCount() : paginationDataProvider.getRowCount();
         int pages = (int) Math.ceil((double) totalRows / currentPageSize);
         ButtonGroup buttonGroup = new ButtonGroup();
         if (pages > MAX_PAGING_COMP_TO_SHOW) {
@@ -370,7 +341,7 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
         int endIndex = startIndex + currentPageSize;
         
         if (lazy) {
-            lazyDataProvider.load(startIndex, endIndex, filters);
+            lazyDataProvider.getRows(startIndex, endIndex, filters);
         } else {
             paginationDataProvider.getRows(startIndex, endIndex, filters);
         }

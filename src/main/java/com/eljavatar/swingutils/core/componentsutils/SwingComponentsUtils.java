@@ -27,6 +27,22 @@ public class SwingComponentsUtils {
         JOptionPane.showMessageDialog(parent, mensaje, titulo, tipo);
     }
     
+    public static void mostrarInfo(Component parent, String mensaje, String titulo) {
+        mostrarMensaje(parent, mensaje, titulo, INFO);
+    }
+    
+    public static void mostrarWarning(Component parent, String mensaje, String titulo) {
+        mostrarMensaje(parent, mensaje, titulo, WARNING);
+    }
+    
+    public static void mostrarError(Component parent, String mensaje, String titulo) {
+        mostrarMensaje(parent, mensaje, titulo, ERROR);
+    }
+    
+    public static void mostrarQuestion(Component parent, String mensaje, String titulo) {
+        mostrarMensaje(parent, mensaje, titulo, QUESTION);
+    }
+    
     public static void enabledComponents(JComponent component, boolean enabled) {
         for (Component c : component.getComponents()) {
             if (c instanceof JComponent) {
