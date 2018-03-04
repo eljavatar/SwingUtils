@@ -62,7 +62,7 @@ public class JComboBoxUtils {
     }
     
     public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list) {
-        JComboBoxUtils.setProperties(jComboBox, list, true, "- Seleccione -", false, true,null, null);
+        JComboBoxUtils.setProperties(jComboBox, list, true, "- Seleccione -", false, true, null, null);
     }
     
 }

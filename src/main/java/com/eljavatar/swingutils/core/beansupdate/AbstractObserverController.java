@@ -38,13 +38,16 @@ import javax.swing.ComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JToggleButton;
 import com.eljavatar.swingutils.core.annotations.ToggleButtonView;
+import com.eljavatar.swingutils.core.components.PaginatedTable;
 import com.eljavatar.swingutils.core.componentsutils.SwingComponentsUtils;
+import com.eljavatar.swingutils.core.modelcomponents.PaginationDataProvider;
 import com.eljavatar.swingutils.core.modelcomponents.TableModelGeneric;
 import com.ibm.icu.text.DecimalFormat;
 import java.awt.Component;
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import javax.swing.JTable;
+import com.eljavatar.swingutils.core.annotations.PaginatedTableView;
 
 /**
  *
@@ -148,6 +151,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                 || fieldView.isAnnotationPresent(ToggleButtonView.class)
                 || fieldView.isAnnotationPresent(ComboBoxView.class)
                 || fieldView.isAnnotationPresent(TableView.class)
+                || fieldView.isAnnotationPresent(PaginatedTableView.class)
                 || fieldView.isAnnotationPresent(ComponentView.class));
     }
     
@@ -165,6 +169,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         ComboBoxView annotationComboBoxView = fieldView.getAnnotation(ComboBoxView.class);
         TableView annotationTableView = fieldView.getAnnotation(TableView.class);
         ComponentView annotationComponentView = fieldView.getAnnotation(ComponentView.class);
+        PaginatedTableView annotationPaginationTableView = fieldView.getAnnotation(PaginatedTableView.class);
 
         String nameComponentView = null;
         int count = 0;
@@ -195,6 +200,10 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         }
         if (annotationComponentView != null && annotationComponentView instanceof ComponentView) {
             nameComponentView = annotationComponentView.name();
+            count++;
+        }
+        if (annotationPaginationTableView != null && annotationPaginationTableView instanceof PaginatedTableView) {
+            nameComponentView = annotationPaginationTableView.name();
             count++;
         }
         
@@ -461,7 +470,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                 }
 
             } else {
-                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo JToggleButton en java swing");
+                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo JToggleButton de java swing");
             }
         } else if (fieldView.isAnnotationPresent(ComboBoxView.class)) {
             if (typeComponentView == JComboBox.class) {
@@ -476,7 +485,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                     model.setSelectedItem(methodGetFieldModel.invoke(objectModelBean));
                 }
             } else {
-                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo ComboBox en java swing");
+                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo ComboBox de java swing");
             }
         } else if (fieldView.isAnnotationPresent(TableView.class)) {
             if (typeComponentView == JTable.class) {
@@ -492,7 +501,25 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                     model.fireTableDataChanged();
                 }
             } else {
-                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo Table en java swing");
+                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo Table de java swing");
+            }
+        } else if (fieldView.isAnnotationPresent(PaginatedTableView.class)) {
+            if (typeComponentView == PaginatedTable.class) {
+                PaginatedTable paginatedTable = (PaginatedTable) objectComponentView;
+                if (!paginatedTable.isLazy()) {
+                    PaginationDataProvider dataProvider = paginatedTable.getPaginationDataProvider();
+                    if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
+                        methodSetFieldModel.invoke(objectModelBean, dataProvider.getListData());
+                    }
+                    if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
+                        List listData = (List) methodGetFieldModel.invoke(objectModelBean);
+                        dataProvider.setListData(listData);
+                        dataProvider.setRowCount(listData.size());
+                        paginatedTable.updatePaginatedTable();
+                    }
+                }
+            } else {
+                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo PaginatedTable de SwingUtils");
             }
         } else {
             // ComponentView

@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -34,12 +35,13 @@ import java.util.stream.Collectors;
  * @author ElJavatar - Andres Mauricio (http://www.eljavatar.com)
  * @param <T>
  */
-public abstract class PaginationDataProvider<T> extends JTableDataProvider<T> implements Serializable {
+public class PaginationDataProvider<T> extends JTableDataProvider<T> implements Serializable {
     
     private List<T> listDataFiltered;
     
     public PaginationDataProvider() {
         super();
+        setListData(new ArrayList<>());
     }
     
     public PaginationDataProvider(List<T> listData) {
@@ -96,10 +98,10 @@ public abstract class PaginationDataProvider<T> extends JTableDataProvider<T> im
             if (endIndex > getListData().size()) {
                 endIndex = getListData().size();
             }
-            this.setRowCount(getListData().size());
+            setRowCount(getListData().size());
             return getListData().subList(startIndex, endIndex);
         } else {
-            this.setRowCount(listaFiltrada.size());
+            setRowCount(listaFiltrada.size());
             if (endIndex > listaFiltrada.size()) {
                 endIndex = listaFiltrada.size();
             }

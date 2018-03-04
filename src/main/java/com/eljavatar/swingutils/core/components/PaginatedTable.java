@@ -33,7 +33,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
@@ -357,6 +356,10 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
         if (!lazy) {
             paginationDataProvider.resetListData();
         }
+        updatePaginatedTable();
+    }
+    
+    public void updatePaginatedTable() {
         filters.clear();
         jCBcolumnFilter.setSelectedItem(null);
         jTFglobalFilter.setText(null);
@@ -413,6 +416,18 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
 
     public TableModelGeneric<T> getTableModelGeneric() {
         return tableModelGeneric;
+    }
+
+    public PaginationDataProvider<T> getPaginationDataProvider() {
+        return paginationDataProvider;
+    }
+
+    public LazyDataProvider<T> getLazyDataProvider() {
+        return lazyDataProvider;
+    }
+
+    public boolean isLazy() {
+        return lazy;
     }
 
 }

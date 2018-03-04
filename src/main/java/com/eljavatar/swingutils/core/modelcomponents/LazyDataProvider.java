@@ -22,7 +22,7 @@ import java.io.Serializable;
  * @author ElJavatar - Andres Mauricio (http://www.eljavatar.com)
  * @param <T>
  */
-public abstract class LazyDataProvider<T> extends JTableDataProvider<T> implements Serializable {
+public class LazyDataProvider<T> extends JTableDataProvider<T> implements Serializable {
 
     public LazyDataProvider() {
         super();
