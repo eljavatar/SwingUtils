@@ -16,8 +16,18 @@
 
 package com.eljavatar.swingutils.core.modelcomponents;
 
+import java.beans.IntrospectionException;
+import java.beans.PropertyDescriptor;
 import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -31,6 +41,10 @@ public abstract class PaginationDataProvider<T> extends JTableDataProvider<T> im
     public PaginationDataProvider() {
         super();
     }
+    
+    public PaginationDataProvider(List<T> listData) {
+        super(listData);
+    }
 
     public List<T> getListDataFiltered() {
         return listDataFiltered;
@@ -38,6 +52,59 @@ public abstract class PaginationDataProvider<T> extends JTableDataProvider<T> im
 
     public void setListDataFiltered(List<T> listDataFiltered) {
         this.listDataFiltered = listDataFiltered;
+    }
+    
+    @Override
+    public List<T> getRows(int startIndex, int endIndex, Map<String, Object> filters) {
+        List<T> listaFiltrada = null;
+        
+        for (Entry<String, Object> entry : filters.entrySet()) {
+            String keyFilter = entry.getKey();
+            Object valueFilter = entry.getValue();
+            
+            if (valueFilter != null && !valueFilter.toString().trim().isEmpty()) {
+                listaFiltrada = getListData().stream().map((objectData) -> {
+                    try {
+                        Class clazz = objectData.getClass();
+                        Field field = clazz.getDeclaredField(keyFilter);
+                        PropertyDescriptor propertyDescriptor = new PropertyDescriptor(field.getName(), field.getDeclaringClass());
+                        Method methodGetField = propertyDescriptor.getReadMethod();
+                        
+                        Object valueData = methodGetField.invoke(objectData);
+                        
+                        if (valueData != null && valueData.toString().matches(valueFilter.toString().trim())) {
+                            return objectData;
+                        } else {
+                            return null;
+                        }
+                    } catch (NoSuchFieldException | SecurityException | IntrospectionException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+                        Logger.getLogger(PaginationDataProvider.class.getName()).log(Level.SEVERE, null, ex);
+                        throw new IllegalArgumentException(ex);
+                    }       
+                }).filter(objectData -> objectData != null).collect(Collectors.toList());
+                
+                break;
+            }
+        }
+
+        setListDataFiltered(returnListaFiltrada(listaFiltrada, startIndex, endIndex));
+        return listaFiltrada;
+    }
+    
+    public List<T> returnListaFiltrada(List<T> listaFiltrada, int startIndex, int endIndex) {
+        if (listaFiltrada == null) {
+            if (endIndex > getListData().size()) {
+                endIndex = getListData().size();
+            }
+            this.setRowCount(getListData().size());
+            return getListData().subList(startIndex, endIndex);
+        } else {
+            this.setRowCount(listaFiltrada.size());
+            if (endIndex > listaFiltrada.size()) {
+                endIndex = listaFiltrada.size();
+            }
+            return listaFiltrada.subList(startIndex, endIndex);
+        }
     }
 
     public void resetListData() {

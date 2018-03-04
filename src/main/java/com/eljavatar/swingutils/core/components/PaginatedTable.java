@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
@@ -241,8 +242,9 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
             if (lazy) {
                 filters.put(objectFilter.getNameFilter(), jTFglobalFilter.getText().trim());
             } else {
-                String filtro = "(?i)(.*)" + jTFglobalFilter.getText().trim() + "(.*)";
-                filters.put(objectFilter.getNameFilter(), filtro);
+                String filtro = jTFglobalFilter.getText().trim().replaceAll("(?=[]\\[+&|!(){}^\"~*?:\\\\-])", "\\\\");
+                String pattern = "(?i)(.*)" + filtro + "(.*)";
+                filters.put(objectFilter.getNameFilter(), pattern);
             }
         }
         

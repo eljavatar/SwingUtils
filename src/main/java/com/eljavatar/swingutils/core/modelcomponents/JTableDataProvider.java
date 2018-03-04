@@ -38,6 +38,10 @@ public abstract class JTableDataProvider<T> implements Serializable {
 
     public JTableDataProvider() {
     }
+    
+    public JTableDataProvider(List<T> listData) {
+        this.listData = listData;
+    }
 
     public List<T> getListData() {
         return listData;
