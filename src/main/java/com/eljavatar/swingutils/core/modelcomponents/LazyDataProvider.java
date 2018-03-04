@@ -20,7 +20,7 @@ import java.io.Serializable;
 /**
  *
  * @author ElJavatar - Andres Mauricio (http://www.eljavatar.com)
- * @param <T>
+ * @param <T> Tipo de Objeto que tendran los elementos del JTable que usará el PaginatedTable
  */
 public class LazyDataProvider<T> extends JTableDataProvider<T> implements Serializable {
 

@@ -22,7 +22,7 @@ import java.util.Map;
 /**
  *
  * @author ElJavatar - Andres Mauricio (http://www.eljavatar.com)
- * @param <T>
+ * @param <T> Tipo de Objeto que tendran los elementos del JTable que usará el PaginatedTable
  */
 public abstract class JTableDataProvider<T> implements Serializable {
     

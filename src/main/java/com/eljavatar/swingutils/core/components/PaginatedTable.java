@@ -51,8 +51,8 @@ import javax.swing.table.TableModel;
  * http://www.logicbig.com/tutorials/core-java-tutorial/swing/jtable-pagination/
  * https://www.javaworld.com/article/2077503/learn-java/java-tip-137--manage-distributed-jtables.html
  * 
- * @author ElJavatar
- * @param <T>
+ * @author ElJavatar - Andres Mauricio (http://www.eljavatar.com)
+ * @param <T> Tipo de Objeto que tendran los elementos del JTable que usará el PaginatedTable
  */
 public class PaginatedTable<T> extends javax.swing.JPanel {
 
