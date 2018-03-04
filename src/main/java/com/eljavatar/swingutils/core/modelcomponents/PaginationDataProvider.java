@@ -62,9 +62,9 @@ public class PaginationDataProvider<T> extends JTableDataProvider<T> implements 
         
         for (Entry<String, Object> entry : filters.entrySet()) {
             String keyFilter = entry.getKey();
-            Object valueFilter = entry.getValue();
+            ObjectFilter objectFilter = (ObjectFilter) entry.getValue();
             
-            if (valueFilter != null && !valueFilter.toString().trim().isEmpty()) {
+            if (objectFilter != null && objectFilter.getValue() != null && !objectFilter.getValue().toString().trim().isEmpty()) {
                 listaFiltrada = getListData().stream().map((objectData) -> {
                     try {
                         Class clazz = objectData.getClass();
@@ -74,7 +74,12 @@ public class PaginationDataProvider<T> extends JTableDataProvider<T> implements 
                         
                         Object valueData = methodGetField.invoke(objectData);
                         
-                        if (valueData != null && valueData.toString().matches(valueFilter.toString().trim())) {
+                        if (valueData != null && 
+                                ((FilterMatchModeEnum.EXACT.equals(objectFilter.getFilterMatchModeEnum()) && valueData.equals(objectFilter.getValue())) 
+                                || (FilterMatchModeEnum.STARTS_WITH.equals(objectFilter.getFilterMatchModeEnum()) && valueData.toString().startsWith(objectFilter.getValue().toString().trim())) 
+                                || (FilterMatchModeEnum.ENDS_WITH.equals(objectFilter.getFilterMatchModeEnum()) && valueData.toString().endsWith(objectFilter.getValue().toString().trim())) 
+                                || ((FilterMatchModeEnum.CONTAINS.equals(objectFilter.getFilterMatchModeEnum()) || objectFilter.getFilterMatchModeEnum() == null) && valueData.toString().matches(objectFilter.getValueWithPattern())))
+                                ) {
                             return objectData;
                         } else {
                             return null;

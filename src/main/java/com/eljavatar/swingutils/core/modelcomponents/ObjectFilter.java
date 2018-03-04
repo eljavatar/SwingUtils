@@ -27,6 +27,22 @@ public class ObjectFilter implements Serializable {
     private String nameIntoComboBox;
     private String nameFilter;
     private int column;
+    private FilterMatchModeEnum filterMatchModeEnum;
+    private Object value;
+    private String valueWithPattern;
+
+    public ObjectFilter(String nameIntoComboBox, String nameFilter, int column, FilterMatchModeEnum filterMatchModeEnum) {
+        this.nameIntoComboBox = nameIntoComboBox;
+        this.nameFilter = nameFilter;
+        this.column = column;
+        this.filterMatchModeEnum = filterMatchModeEnum;
+    }
+    
+    public ObjectFilter(String nameIntoComboBox, String nameFilter, FilterMatchModeEnum filterMatchModeEnum) {
+        this.nameIntoComboBox = nameIntoComboBox;
+        this.nameFilter = nameFilter;
+        this.filterMatchModeEnum = filterMatchModeEnum;
+    }
 
     public ObjectFilter(String nameIntoComboBox, String nameFilter, int column) {
         this.nameIntoComboBox = nameIntoComboBox;
@@ -64,6 +80,30 @@ public class ObjectFilter implements Serializable {
 
     public void setColumn(int column) {
         this.column = column;
+    }
+
+    public FilterMatchModeEnum getFilterMatchModeEnum() {
+        return filterMatchModeEnum;
+    }
+
+    public void setFilterMatchModeEnum(FilterMatchModeEnum filterMatchModeEnum) {
+        this.filterMatchModeEnum = filterMatchModeEnum;
+    }
+
+    public Object getValue() {
+        return value;
+    }
+
+    public void setValue(Object value) {
+        this.value = value;
+    }
+
+    public String getValueWithPattern() {
+        return valueWithPattern;
+    }
+
+    public void setValueWithPattern(String valueWithPattern) {
+        this.valueWithPattern = valueWithPattern;
     }
     
 }

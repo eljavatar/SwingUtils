@@ -236,14 +236,16 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
         ObjectFilter objectFilter = (ObjectFilter) jCBcolumnFilter.getSelectedItem();
         filters.clear();
         
-        filters.put(objectFilter.getNameFilter(), jTFglobalFilter.getText().trim());
+        //filters.put(objectFilter.getNameFilter(), jTFglobalFilter.getText().trim());
         if (!jTFglobalFilter.getText().trim().isEmpty()) {
             if (lazy) {
                 filters.put(objectFilter.getNameFilter(), jTFglobalFilter.getText().trim());
             } else {
                 String filtro = jTFglobalFilter.getText().trim().replaceAll("(?=[]\\[+&|!(){}^\"~*?:\\\\-])", "\\\\");
                 String pattern = "(?i)(.*)" + filtro + "(.*)";
-                filters.put(objectFilter.getNameFilter(), pattern);
+                objectFilter.setValue(jTFglobalFilter.getText().trim());
+                objectFilter.setValueWithPattern(pattern);
+                filters.put(objectFilter.getNameFilter(), objectFilter);
             }
         }
         
