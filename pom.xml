@@ -58,6 +58,14 @@
             <artifactId>icu4j</artifactId>
             <version>60.2</version>
         </dependency>
+        
+        <!-- https://mvnrepository.com/artifact/com.dorkbox/Notify -->
+        <dependency>
+            <groupId>com.dorkbox</groupId>
+            <artifactId>Notify</artifactId>
+            <version>3.7</version>
+        </dependency>
+
     </dependencies>
     
     <build>

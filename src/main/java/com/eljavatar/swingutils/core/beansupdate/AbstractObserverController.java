@@ -54,15 +54,14 @@ import javax.swing.JComboBox;
 import javax.swing.JToggleButton;
 import com.eljavatar.swingutils.core.annotations.ToggleButtonView;
 import com.eljavatar.swingutils.core.components.PaginatedTable;
-import com.eljavatar.swingutils.core.componentsutils.SwingComponentsUtils;
 import com.eljavatar.swingutils.core.modelcomponents.PaginationDataProvider;
 import com.eljavatar.swingutils.core.modelcomponents.TableModelGeneric;
 import com.ibm.icu.text.DecimalFormat;
-import java.awt.Component;
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import javax.swing.JTable;
 import com.eljavatar.swingutils.core.annotations.PaginatedTableView;
+import com.eljavatar.swingutils.core.componentsutils.NotifyUtils;
 
 /**
  *
@@ -75,7 +74,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
     private C controller;
     private V view;
     private AbstractObservable<C> observable;
-    private boolean hasMessages;
+    private boolean failedValidation;
     
     public AbstractObserverController() {
         // Constructor vacio por defecto
@@ -87,7 +86,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
     
     @Override
     public void update(Observable o, Object arg) {
-        this.hasMessages = false;
+        this.failedValidation = false;
         if (arg instanceof ObjectUpdate) {
             ObjectUpdate objectUpdate = (ObjectUpdate) arg;
             actualizar(controller, view, objectUpdate.getTipoUpdateEnum(), objectUpdate.getComponent(), objectUpdate.getListComponents());
@@ -99,8 +98,8 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         }
     }
     
-    public boolean hasMessages() {
-        return hasMessages;
+    public boolean hasFailedValidation() {
+        return failedValidation;
     }
     
     /**
@@ -690,11 +689,11 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                 }
             }
         } catch (NumberFormatException ex) {
-            SwingComponentsUtils.mostrarMensaje((Component) view, "El valor " + jTextComponent.getText() + " no tiene un formato numérico correcto", "Formato Incorrecto", SwingComponentsUtils.ERROR);
-            this.hasMessages = true;
+            NotifyUtils.showErrorAutoHide(null, "Formato Incorrecto", "El valor " + jTextComponent.getText() + " no tiene un formato numérico correcto");
+            this.failedValidation = true;
         } catch (ParseException ex) {
-            SwingComponentsUtils.mostrarError((Component) view, "El valor " + jTextComponent.getText() + " no tiene un formato correcto", "Formato Incorrecto");
-            this.hasMessages = true;
+            NotifyUtils.showErrorAutoHide(null, "Formato Incorrecto", "El valor " + jTextComponent.getText() + " no tiene un formato correcto");
+            this.failedValidation = true;
         } catch (IllegalArgumentException ex) {
             Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "IllegalArgumentException", ex);
         }
