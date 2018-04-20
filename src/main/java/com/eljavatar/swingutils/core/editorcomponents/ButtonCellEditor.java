@@ -29,18 +29,16 @@ import javax.swing.table.TableCellEditor;
  */
 public abstract class ButtonCellEditor extends AbstractCellEditor implements TableCellEditor, ActionListener {
 
+    private Object value;
     private final JButton editorButton;
+    
     private JTable jTable;
     private int rowSelected;
     private int colSelected;
-    private boolean isPushed;
 
     public ButtonCellEditor(JButton jButton) {
         this.editorButton = jButton;
-//        System.out.println("Entramos al constructor");
         jButton.addActionListener(ButtonCellEditor.this);
-        
-        //fireEditingStopped();
     }
 
     private void setjTable(JTable jTable) {
@@ -54,24 +52,16 @@ public abstract class ButtonCellEditor extends AbstractCellEditor implements Tab
     private void setColSelected(int colSelected) {
         this.colSelected = colSelected;
     }
-    
+
     public abstract void action(JTable table, int row, int column);
 
     @Override
     public final Object getCellEditorValue() {
-//        System.out.println("Obtenemos valor");
-        if (isPushed)  {
-            //action(jTable, rowSelected, colSelected);
-        }
-        
-        isPushed = false;
-        return null;
+        return value;
     }
 
     @Override
     public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-//        System.out.println("Iniciamos editor");
-        
         if (isSelected) {
             editorButton.setForeground(table.getSelectionForeground());
             editorButton.setBackground(table.getSelectionBackground());
@@ -79,39 +69,29 @@ public abstract class ButtonCellEditor extends AbstractCellEditor implements Tab
             editorButton.setForeground(table.getForeground());
             editorButton.setBackground(table.getBackground());
         }
-        
+
         setjTable(table);
         setRowSelected(row);
         setColSelected(column);
-        
-        if (isPushed)  {
-            //action(jTable, rowSelected, colSelected);
-        } else {
-            isPushed = true;
-        }
-        
+
+        value = table.getValueAt(row, column);
+
         return editorButton;
     }
 
     @Override
     public boolean stopCellEditing() {
-//        System.out.println("\nStop edicion\n");
-        isPushed = false;
         return super.stopCellEditing();
     }
 
     @Override
     protected void fireEditingStopped() {
-//        System.out.println("\nFired edicion\n");
         super.fireEditingStopped();
-        isPushed = false;
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-//        System.out.println("\nParamos edicion\n");
         super.fireEditingStopped();
-        isPushed = false;
         action(jTable, rowSelected, colSelected);
     }
 
