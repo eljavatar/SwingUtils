@@ -20,6 +20,7 @@ import java.awt.Component;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.Window;
+import javax.swing.Icon;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
@@ -38,24 +39,24 @@ public class SwingComponentsUtils {
     public static final int QUESTION = JOptionPane.QUESTION_MESSAGE;
     public static final int ERROR = JOptionPane.ERROR_MESSAGE;
     
-    public static void mostrarMensaje(Component parent, String mensaje, String titulo, int tipo) {
-        JOptionPane.showMessageDialog(parent, mensaje, titulo, tipo);
+    public static void mostrarMensaje(Component parent, String mensaje, String titulo, int tipo, Icon icon) {
+        JOptionPane.showMessageDialog(parent, mensaje, titulo, tipo, icon);
     }
     
     public static void mostrarInfo(Component parent, String mensaje, String titulo) {
-        mostrarMensaje(parent, mensaje, titulo, INFO);
+        mostrarMensaje(parent, mensaje, titulo, INFO, new javax.swing.ImageIcon(SwingComponentsUtils.class.getResource("/images/dialog-information.png")));
     }
     
     public static void mostrarWarning(Component parent, String mensaje, String titulo) {
-        mostrarMensaje(parent, mensaje, titulo, WARNING);
+        mostrarMensaje(parent, mensaje, titulo, WARNING, new javax.swing.ImageIcon(SwingComponentsUtils.class.getResource("/images/dialog-warning.png")));
     }
     
     public static void mostrarError(Component parent, String mensaje, String titulo) {
-        mostrarMensaje(parent, mensaje, titulo, ERROR);
+        mostrarMensaje(parent, mensaje, titulo, ERROR, new javax.swing.ImageIcon(SwingComponentsUtils.class.getResource("/images/dialog-error.png")));
     }
     
     public static void mostrarQuestion(Component parent, String mensaje, String titulo) {
-        mostrarMensaje(parent, mensaje, titulo, QUESTION);
+        mostrarMensaje(parent, mensaje, titulo, QUESTION, new javax.swing.ImageIcon(SwingComponentsUtils.class.getResource("/images/dialog-confirm.png")));
     }
     
     public static void enabledComponents(JComponent component, boolean enabled) {

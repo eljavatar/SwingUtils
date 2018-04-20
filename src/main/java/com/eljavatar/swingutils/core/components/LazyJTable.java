@@ -138,7 +138,7 @@ public class LazyJTable<T> extends javax.swing.JPanel {
         int columna = jCBcolumnFilter.getSelectedIndex() - 1;
         
         if (columna < 0) {
-            SwingComponentsUtils.mostrarMensaje(this, "Debe seleccionar una columna para filtrar", "Mensaje de error", SwingComponentsUtils.ERROR);
+            SwingComponentsUtils.mostrarError(this, "Debe seleccionar una columna para filtrar", "Mensaje de error");
             return;
         }
         
