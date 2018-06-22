@@ -64,4 +64,14 @@ public class StringUtils {
         return str == null || str.isEmpty();
     }
     
+    /**
+     * 
+     * @param str Recibe la cadena a validar
+     * @return <code>true</code> si es <code>null</code> o es una cadena vacía
+     * después de aplicarle el método trim()
+     */
+    public static boolean isEmptyTrim(String str) {
+        return str == null || str.trim().isEmpty();
+    }
+    
 }
