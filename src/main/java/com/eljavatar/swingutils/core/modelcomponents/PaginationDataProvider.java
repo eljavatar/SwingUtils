@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import javax.swing.SortOrder;
 
 /**
  *
@@ -57,8 +58,34 @@ public class PaginationDataProvider<T> extends JTableDataProvider<T> implements 
     }
     
     @Override
-    public List<T> getRows(int startIndex, int endIndex, Map<String, Object> filters) {
+    public List<T> getRows(int startIndex, int pageSize, String sortField, SortOrder sortOrder, Map<String, Object> filters) {
         List<T> listaFiltrada = null;
+        
+        if (!sortOrder.equals(SortOrder.UNSORTED) && sortField != null && !sortField.trim().isEmpty()) {
+            getListData().sort((T o1, T o2) -> {
+                try {
+                    Class clazz = o1.getClass();
+                    Field field = clazz.getDeclaredField(sortField);
+                    PropertyDescriptor propertyDescriptor = new PropertyDescriptor(field.getName(), field.getDeclaringClass());
+                    Method methodGetField = propertyDescriptor.getReadMethod();
+
+                    Object valueData1 = methodGetField.invoke(o1);
+                    Object valueData2 = methodGetField.invoke(o2);
+
+                    if (valueData1 instanceof Comparable && valueData2 instanceof Comparable) {
+                        if (sortOrder.equals(SortOrder.ASCENDING)) {
+                            return ((Comparable )valueData1).compareTo((Comparable) valueData2);
+                        } else {
+                            return ((Comparable )valueData2).compareTo((Comparable) valueData1);
+                        }
+                    }
+                    return 0;
+                } catch (NoSuchFieldException | SecurityException | IntrospectionException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+                    Logger.getLogger(PaginationDataProvider.class.getName()).log(Level.SEVERE, null, ex);
+                    throw new IllegalArgumentException(ex);
+                }
+            });
+        }
         
         for (Entry<String, Object> entry : filters.entrySet()) {
             String keyFilter = entry.getKey();
@@ -94,11 +121,12 @@ public class PaginationDataProvider<T> extends JTableDataProvider<T> implements 
             }
         }
 
-        setListDataFiltered(returnListaFiltrada(listaFiltrada, startIndex, endIndex));
-        return listaFiltrada;
+        setListDataFiltered(returnListaFiltrada(listaFiltrada, startIndex, pageSize));
+        return getListDataFiltered();
     }
     
-    public List<T> returnListaFiltrada(List<T> listaFiltrada, int startIndex, int endIndex) {
+    public List<T> returnListaFiltrada(List<T> listaFiltrada, int startIndex, int pageSize) {
+        int endIndex = startIndex + pageSize;
         if (listaFiltrada == null) {
             if (endIndex > getListData().size()) {
                 endIndex = getListData().size();
@@ -112,10 +140,6 @@ public class PaginationDataProvider<T> extends JTableDataProvider<T> implements 
             }
             return listaFiltrada.subList(startIndex, endIndex);
         }
-    }
-
-    public void resetListData() {
-        throw new UnsupportedOperationException("Rows reset is not implemented.");
     }
     
 }

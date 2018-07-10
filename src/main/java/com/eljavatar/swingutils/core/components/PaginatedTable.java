@@ -21,6 +21,7 @@ import com.eljavatar.swingutils.core.modelcomponents.JTableDataProvider;
 import com.eljavatar.swingutils.core.componentsutils.JComboBoxUtils;
 import com.eljavatar.swingutils.core.componentsutils.SwingComponentsUtils;
 import com.eljavatar.swingutils.core.modelcomponents.ObjectFilter;
+import com.eljavatar.swingutils.core.modelcomponents.ObjectSorter;
 import com.eljavatar.swingutils.core.modelcomponents.TableModelGeneric;
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -36,6 +37,7 @@ import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
+import javax.swing.DefaultRowSorter;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -43,7 +45,10 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
+import javax.swing.RowSorter;
+import javax.swing.SortOrder;
 import javax.swing.SwingConstants;
+import javax.swing.event.RowSorterEvent;
 import javax.swing.event.TableModelEvent;
 import javax.swing.table.TableModel;
 
@@ -177,7 +182,10 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
         initDataModel();
         initPaginationComponents();
         initListeners();
-        paginate();
+        //paginate();
+        List<T> rows = lazy ? lazyDataProvider.getListData() : paginationDataProvider.getListDataFiltered();
+        tableModelGeneric.setListElements(rows);
+        tableModelGeneric.fireTableDataChanged();
     }
     
     private void initDataModel() {
@@ -280,6 +288,30 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
     
     private void initListeners() {
         tableModelGeneric.addTableModelListener(this::refreshPageButtonPanel);
+        
+        if (dataTable.getRowSorter() != null) {
+            DefaultRowSorter<? extends TableModel, String> sorter = (DefaultRowSorter<TableModel, String>) dataTable.getRowSorter();
+            
+            setSortableColumns(sorter);
+            
+            dataTable.getRowSorter().addRowSorterListener((RowSorterEvent e) -> {
+                if(e.getType() == RowSorterEvent.Type.SORT_ORDER_CHANGED) {
+                    currentPage = 1;
+                    paginate();
+                }
+            });
+        }
+    }
+    
+    private void setSortableColumns(DefaultRowSorter<? extends TableModel, String> sorter) {
+        // Deshabilitamos el sorter de todas las columnas
+        for (int i = 0 ; i < dataTable.getColumnCount() ; i++) {
+            sorter.setSortable(i, false);
+        }
+        // Habilitamos el sorter solo de las columnas indicadas por el usuario
+        tableModelGeneric.getSorterProperties().forEach((objectSorter) -> {
+            sorter.setSortable(objectSorter.getColumn(), true);
+        });
     }
     
     private void refreshPageButtonPanel(TableModelEvent tme) {
@@ -341,12 +373,32 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
     
     private void paginate() {
         int startIndex = (currentPage - 1) * currentPageSize;
-        int endIndex = startIndex + currentPageSize;
+        //int endIndex = startIndex + currentPageSize;
+        
+        int sortColumn = -1;
+        SortOrder sortOrder = SortOrder.UNSORTED;
+        RowSorter<? extends TableModel> rowSorter = dataTable.getRowSorter();
+        if (rowSorter != null) {
+            for (RowSorter.SortKey sortKey : rowSorter.getSortKeys()) {
+                if (sortKey.getSortOrder() != SortOrder.UNSORTED) {
+                    sortColumn = sortKey.getColumn();
+                    sortOrder = sortKey.getSortOrder();
+                    break;
+                }
+            }
+        }
+        String sortField = null;
+        for (ObjectSorter objectSorter : tableModelGeneric.getSorterProperties()) {
+            if (objectSorter.getColumn() == sortColumn) {
+                sortField = objectSorter.getSortField();
+                break;
+            }
+        }
         
         if (lazy) {
-            lazyDataProvider.getRows(startIndex, endIndex, filters);
+            lazyDataProvider.getRows(startIndex, currentPageSize, sortField, sortOrder, filters);
         } else {
-            paginationDataProvider.getRows(startIndex, endIndex, filters);
+            paginationDataProvider.getRows(startIndex, currentPageSize, sortField, sortOrder, filters);
         }
         
         List<T> rows = lazy ? lazyDataProvider.getListData() : paginationDataProvider.getListDataFiltered();
@@ -354,14 +406,12 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
         tableModelGeneric.fireTableDataChanged();
     }
     
-    public void clearAndBackToPageOne() {
-        if (!lazy) {
-            paginationDataProvider.resetListData();
+    public void resetPaginatedTable() {
+        if (dataTable.getRowSorter() != null) {
+            DefaultRowSorter<? extends TableModel, String> sorter = (DefaultRowSorter<TableModel, String>) dataTable.getRowSorter();
+            sorter.modelStructureChanged();
+            setSortableColumns(sorter);
         }
-        updatePaginatedTable();
-    }
-    
-    public void updatePaginatedTable() {
         filters.clear();
         jCBcolumnFilter.setSelectedItem(null);
         jTFglobalFilter.setText(null);

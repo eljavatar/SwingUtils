@@ -18,6 +18,7 @@ package com.eljavatar.swingutils.core.modelcomponents;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import javax.swing.SortOrder;
 
 /**
  *
@@ -59,7 +60,7 @@ public abstract class JTableDataProvider<T> implements Serializable {
         this.rowCount = rowCount;
     }
     
-    public List<T> getRows(int startIndex, int endIndex, Map<String, Object> filters) {
+    public List<T> getRows(int startIndex, int pageSize, String sortField, SortOrder sortOrder, Map<String, Object> filters) {
         throw new UnsupportedOperationException("Rows loading is not implemented.");
     }
     

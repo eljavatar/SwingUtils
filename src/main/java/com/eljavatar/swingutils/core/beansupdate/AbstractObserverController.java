@@ -529,7 +529,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                         List listData = (List) methodGetFieldModel.invoke(objectModelBean);
                         dataProvider.setListData(listData);
                         dataProvider.setRowCount(listData.size());
-                        paginatedTable.updatePaginatedTable();
+                        paginatedTable.resetPaginatedTable();
                     }
                 }
             } else {
