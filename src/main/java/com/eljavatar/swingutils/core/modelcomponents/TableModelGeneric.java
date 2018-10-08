@@ -157,8 +157,8 @@ public abstract class TableModelGeneric<E> extends AbstractTableModel implements
     /**
      * Método abstracto que debe ser implementado en las clases que heredan de TableModelGeneric
      * @param e Objeto del tipo genérico que usa el TableModel
-     * @param columnIndex
-     * @return 
+     * @param columnIndex Número de columna del cual se desea obtener el objeto
+     * @return Retorna el valor que se mostrará en la columna indicada
      */
     public abstract Object getValueAt(E e, int columnIndex);
 

@@ -62,6 +62,8 @@ import java.beans.PropertyDescriptor;
 import javax.swing.JTable;
 import com.eljavatar.swingutils.core.annotations.PaginatedTableView;
 import com.eljavatar.swingutils.core.componentsutils.NotifyUtils;
+import com.ibm.icu.text.DecimalFormatSymbols;
+import java.util.Locale;
 
 /**
  *
@@ -452,19 +454,21 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         }
 
         if (fieldView.isAnnotationPresent(TextView.class)) {
-            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, null);
+            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, null, null);
 
         } else if (fieldView.isAnnotationPresent(DateTextView.class)) {
             DateTextView annotationDateTextView = fieldView.getAnnotation(DateTextView.class);
             String pattern = annotationDateTextView.pattern();
+            Locale locale = annotationDateTextView.locale() != null ? annotationDateTextView.locale().getLocale() : null;
 
-            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, pattern);
+            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, pattern, locale);
 
         } else if (fieldView.isAnnotationPresent(NumberTextView.class)) {
             NumberTextView annotationNumberTextView = fieldView.getAnnotation(NumberTextView.class);
             String pattern = annotationNumberTextView.pattern();
+            Locale locale = annotationNumberTextView.locale() != null ? annotationNumberTextView.locale().getLocale() : null;
 
-            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, pattern);
+            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, pattern, locale);
 
         } else if (fieldView.isAnnotationPresent(ToggleButtonView.class)) {
             if (JToggleButton.class.isAssignableFrom(typeComponentView)) {
@@ -572,10 +576,10 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
      * @throws IllegalArgumentException
      * @throws IllegalAccessException 
      */
-    private void updateGenericTextViewData(Class typeComponentView, Object valueComponentView, String nameComponentView, Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Method methodGetFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, String pattern) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+    private void updateGenericTextViewData(Class typeComponentView, Object valueComponentView, String nameComponentView, Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Method methodGetFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, String pattern, Locale locale) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
         if (JTextComponent.class.isAssignableFrom(typeComponentView)) {
             JTextComponent jTFfield = (JTextComponent) valueComponentView;
-            setTextData(fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, jTFfield, pattern);
+            setTextData(fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, jTFfield, pattern, locale);
         } else {
             throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo texto (JTextComponent) en java swing");
         }
@@ -592,18 +596,18 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
      * @throws IllegalArgumentException
      * @throws IllegalAccessException 
      */
-    private void setTextData(Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Method methodGetFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, JTextComponent jTextComponent, String pattern) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+    private void setTextData(Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Method methodGetFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, JTextComponent jTextComponent, String pattern, Locale locale) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
         if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
             if (getTextFromComponent(jTextComponent).isEmpty()) {
                 methodSetFieldModel.invoke(objectModelBean, (Object) null);
                 //fieldModel.set(objectModelBean, null);
             } else {
-                insertIntoFieldModelFromTextComponent(fieldModel, typeFieldModel, methodSetFieldModel, objectModelBean, jTextComponent, pattern);
+                insertIntoFieldModelFromTextComponent(fieldModel, typeFieldModel, methodSetFieldModel, objectModelBean, jTextComponent, pattern, locale);
             }
         }
 
         if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
-            insertIntoTextComponentFromFieldModel(fieldModel, typeFieldModel, methodGetFieldModel, objectModelBean, jTextComponent, pattern);
+            insertIntoTextComponentFromFieldModel(fieldModel, typeFieldModel, methodGetFieldModel, objectModelBean, jTextComponent, pattern, locale);
         }
     }
     
@@ -618,7 +622,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
      * @throws IllegalArgumentException
      * @throws IllegalAccessException 
      */
-    private void insertIntoFieldModelFromTextComponent(Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Object objectModelBean, JTextComponent jTextComponent, String pattern) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+    private void insertIntoFieldModelFromTextComponent(Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Object objectModelBean, JTextComponent jTextComponent, String pattern, Locale locale) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
         try  {
             if (typeFieldModel == String.class) {
                 methodSetFieldModel.invoke(objectModelBean, getTextFromComponent(jTextComponent));
@@ -628,7 +632,8 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                 // https://www.ibm.com/developerworks/library/j-numberformat/index.html
                 DecimalFormat decimalFormat = null;
                 if (pattern != null && !pattern.isEmpty()) {
-                    decimalFormat = new DecimalFormat(pattern);
+                    DecimalFormatSymbols symbols = locale != null ? new DecimalFormatSymbols(locale) : new DecimalFormatSymbols();
+                    decimalFormat = new DecimalFormat(pattern, symbols);
                     decimalFormat.setParseStrict(true);
                 }
                 if (typeFieldModel == Byte.class || typeFieldModel == byte.class) {
@@ -667,7 +672,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                 SimpleDateFormat sdf = new SimpleDateFormat();
                 sdf.setLenient(false);
                 if (pattern != null && !pattern.isEmpty()) {
-                    sdf = new SimpleDateFormat(pattern);
+                    sdf = locale != null ? new SimpleDateFormat(pattern, locale) : new SimpleDateFormat(pattern);
                 }
                 if (typeFieldModel == java.sql.Time.class) {
                     methodSetFieldModel.invoke(objectModelBean,  new java.sql.Time(sdf.parse(getTextFromComponent(jTextComponent)).getTime()));
@@ -679,7 +684,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                     methodSetFieldModel.invoke(objectModelBean,  sdf.parse(getTextFromComponent(jTextComponent)));
                 }
             } else if (java.time.temporal.Temporal.class.isAssignableFrom(typeFieldModel)) {
-                DateTimeFormatter formatter = getDateTimeFormatter(typeFieldModel, pattern);
+                DateTimeFormatter formatter = getDateTimeFormatter(typeFieldModel, pattern, locale);
                 if (typeFieldModel == LocalDate.class) {
                     methodSetFieldModel.invoke(objectModelBean,  LocalDate.parse(getTextFromComponent(jTextComponent), formatter));
                 } else if (typeFieldModel == LocalTime.class) {
@@ -705,9 +710,9 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
      * @param pattern
      * @return 
      */
-    private DateTimeFormatter getDateTimeFormatter(Class typeFieldModel, String pattern) throws IllegalArgumentException {
+    private DateTimeFormatter getDateTimeFormatter(Class typeFieldModel, String pattern, Locale locale) throws IllegalArgumentException {
         if (pattern != null && !pattern.isEmpty()) {
-            return DateTimeFormatter.ofPattern(pattern);
+            return locale != null ? DateTimeFormatter.ofPattern(pattern, locale) : DateTimeFormatter.ofPattern(pattern);
         }
         if (typeFieldModel == LocalDate.class) {
             return DateTimeFormatter.ISO_LOCAL_DATE;
@@ -760,8 +765,8 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
      * @throws IllegalArgumentException
      * @throws IllegalAccessException 
      */
-    private void insertIntoTextComponentFromFieldModel(Field fieldModel, Class typeFieldModel, Method methodGetFieldModel, Object objectModelBean, JTextComponent jTextComponent, String pattern) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
-        String text = getTextFormattedForInsertIntoComponent(typeFieldModel, methodGetFieldModel, objectModelBean, pattern);
+    private void insertIntoTextComponentFromFieldModel(Field fieldModel, Class typeFieldModel, Method methodGetFieldModel, Object objectModelBean, JTextComponent jTextComponent, String pattern, Locale locale) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+        String text = getTextFormattedForInsertIntoComponent(typeFieldModel, methodGetFieldModel, objectModelBean, pattern, locale);
         if (jTextComponent instanceof JTextField) {
             JTextField jTextField = (JTextField) jTextComponent;
             jTextField.setText(text);
@@ -796,7 +801,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
      * @throws IllegalArgumentException
      * @throws IllegalAccessException 
      */
-    private String getTextFormattedForInsertIntoComponent(Class typeFieldModel, Method methodGetFieldModel, Object objectModelBean, String pattern) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+    private String getTextFormattedForInsertIntoComponent(Class typeFieldModel, Method methodGetFieldModel, Object objectModelBean, String pattern, Locale locale) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
         Object object = methodGetFieldModel.invoke(objectModelBean);
         //Object object = fieldModel.get(objectModelBean);
         if (object == null) {
@@ -806,10 +811,11 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
             return object.toString();
         }
         if (Number.class.isAssignableFrom(typeFieldModel)) {
-            DecimalFormat df = new DecimalFormat(pattern);
+            DecimalFormatSymbols symbols = locale != null ? new DecimalFormatSymbols(locale) : new DecimalFormatSymbols();
+            DecimalFormat df = new DecimalFormat(pattern, symbols);
             return df.format(object);
         } else if (java.util.Date.class.isAssignableFrom(typeFieldModel)) {
-            SimpleDateFormat sdf = new SimpleDateFormat(pattern);
+            SimpleDateFormat sdf = locale != null ? new SimpleDateFormat(pattern, locale) : new SimpleDateFormat(pattern);
             sdf.setLenient(false);
             if (typeFieldModel == java.sql.Time.class) {
                 return sdf.format((java.sql.Time) object);
@@ -821,7 +827,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                 return sdf.format((java.util.Date) object);
             }
         } else if (java.time.temporal.Temporal.class.isAssignableFrom(typeFieldModel)) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
+            DateTimeFormatter formatter = locale != null ? DateTimeFormatter.ofPattern(pattern, locale) : DateTimeFormatter.ofPattern(pattern);
             if (typeFieldModel == LocalDate.class) {
                 return ((LocalDate) object).format(formatter);
             } else if (typeFieldModel == LocalTime.class) {

@@ -15,6 +15,7 @@
  */
 package com.eljavatar.swingutils.core.annotations;
 
+import com.eljavatar.swingutils.util.LocaleEnum;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -63,5 +64,11 @@ public @interface DateTextView {
      * @return Pattern de fecha
      */
     String pattern() default "";
+    
+    /**
+     * 
+     * @return Locale para aplicar al formato de fecha
+     */
+    LocaleEnum locale() default LocaleEnum.DEFAULT;
     
 }
