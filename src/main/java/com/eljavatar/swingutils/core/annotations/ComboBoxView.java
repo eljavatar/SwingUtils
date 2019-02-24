@@ -40,4 +40,22 @@ public @interface ComboBoxView {
      */
     String name();
     
+    /**
+     * <p>
+     * Indica si el valor a seleccionar en el ComboBox es requerido o no; en caso de ser
+     * <code>true</code>, se mostrará un mensaje de error, el cual puede ser personalizado
+     * mediante la propiedad <code>requiredMessage</code>
+     * @return Valor bboleano que indica si el valor es obligatorio o no
+     */
+    boolean required() default false;
+    
+    /**
+     * <p>
+     * Mediante esta propiedad es posible personalizar el mensaje de error que se muestra
+     * cuando la propiedad <code>required</code> se marca como <code>true</code>, pero no
+     * se selecciona ningún valor en el ComboBox
+     * @return Mensaje de error personalizado cuando required is true
+     */
+    String requiredMessage() default "";
+    
 }

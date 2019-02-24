@@ -63,6 +63,7 @@ import javax.swing.JTable;
 import com.eljavatar.swingutils.core.annotations.PaginatedTableView;
 import com.eljavatar.swingutils.core.componentsutils.NotifyUtils;
 import com.ibm.icu.text.DecimalFormatSymbols;
+import java.awt.event.ActionListener;
 import java.util.Locale;
 
 /**
@@ -342,7 +343,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                             // con el actual, continuamos el proceso, de lo contrario saltamos a la
                             // siguiente iteración de la vista rompiendo el ciclo (Al siguiente Field del View)
                             if (!isValidNamesComponentView(listComponentsToUpdate, componentToUpdate, null, null, null, nameComponentView, false)) {
-                                break;
+                                continue;
                             }
 
                             if (Objects.equals(nameComponentView, nameComponentController)) {
@@ -377,7 +378,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                             // con el actual, continuamos el proceso, de lo contrario saltamos a la
                             // siguiente iteración (Al siguiente Field)
                             if (!isValidNamesComponentView(listComponentsToUpdate, componentToUpdate, valuesComponentToUpdate, componentViewNameModel, componentViewNameField, null, true)) {
-                                break;
+                                continue;
                             }
 
                             if (Objects.equals(componentViewNameModel, nameComponentController)) {
@@ -454,21 +455,29 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         }
 
         if (fieldView.isAnnotationPresent(TextView.class)) {
-            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, null, null);
+            TextView annotationTextView = fieldView.getAnnotation(TextView.class);
+            boolean required = annotationTextView.required();
+            String requiredMessage = (annotationTextView.requiredMessage() != null && !annotationTextView.requiredMessage().isEmpty()) ? annotationTextView.requiredMessage() : "El campo '" + nameComponentView + "' debe contener un valor";
+            
+            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, null, null, required, requiredMessage);
 
         } else if (fieldView.isAnnotationPresent(DateTextView.class)) {
             DateTextView annotationDateTextView = fieldView.getAnnotation(DateTextView.class);
             String pattern = annotationDateTextView.pattern();
             Locale locale = annotationDateTextView.locale() != null ? annotationDateTextView.locale().getLocale() : null;
+            boolean required = annotationDateTextView.required();
+            String requiredMessage = (annotationDateTextView.requiredMessage() != null && !annotationDateTextView.requiredMessage().isEmpty()) ? annotationDateTextView.requiredMessage() : "El campo '" + nameComponentView + "' debe contener un valor";
 
-            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, pattern, locale);
+            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, pattern, locale, required, requiredMessage);
 
         } else if (fieldView.isAnnotationPresent(NumberTextView.class)) {
             NumberTextView annotationNumberTextView = fieldView.getAnnotation(NumberTextView.class);
             String pattern = annotationNumberTextView.pattern();
             Locale locale = annotationNumberTextView.locale() != null ? annotationNumberTextView.locale().getLocale() : null;
+            boolean required = annotationNumberTextView.required();
+            String requiredMessage = (annotationNumberTextView.requiredMessage() != null && !annotationNumberTextView.requiredMessage().isEmpty()) ? annotationNumberTextView.requiredMessage() : "El campo '" + nameComponentView + "' debe contener un valor";
 
-            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, pattern, locale);
+            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, pattern, locale, required, requiredMessage);
 
         } else if (fieldView.isAnnotationPresent(ToggleButtonView.class)) {
             if (JToggleButton.class.isAssignableFrom(typeComponentView)) {
@@ -482,6 +491,9 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                         //Boolean bool = (Boolean) fieldModel.get(objectModelBean);
                         Boolean bool = (Boolean) methodGetFieldModel.invoke(objectModelBean);
                         jToggleButton.setSelected(bool != null ? bool : Boolean.FALSE);
+                        for (ActionListener actionListener : jToggleButton.getActionListeners()) {
+                            actionListener.actionPerformed(null);
+                        }
                     } else {
                         throw new IllegalArgumentException("Atributo in Model " + fieldModel.getName() + " no es de tipo boolean");
                     }
@@ -576,10 +588,10 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
      * @throws IllegalArgumentException
      * @throws IllegalAccessException 
      */
-    private void updateGenericTextViewData(Class typeComponentView, Object valueComponentView, String nameComponentView, Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Method methodGetFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, String pattern, Locale locale) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+    private void updateGenericTextViewData(Class typeComponentView, Object valueComponentView, String nameComponentView, Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Method methodGetFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, String pattern, Locale locale, boolean required, String requiredMessage) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
         if (JTextComponent.class.isAssignableFrom(typeComponentView)) {
             JTextComponent jTFfield = (JTextComponent) valueComponentView;
-            setTextData(fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, jTFfield, pattern, locale);
+            setTextData(fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, jTFfield, pattern, locale, required, requiredMessage);
         } else {
             throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo texto (JTextComponent) en java swing");
         }
@@ -596,10 +608,14 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
      * @throws IllegalArgumentException
      * @throws IllegalAccessException 
      */
-    private void setTextData(Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Method methodGetFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, JTextComponent jTextComponent, String pattern, Locale locale) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+    private void setTextData(Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Method methodGetFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, JTextComponent jTextComponent, String pattern, Locale locale, boolean required, String requiredMessage) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
         if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
             if (getTextFromComponent(jTextComponent).isEmpty()) {
                 methodSetFieldModel.invoke(objectModelBean, (Object) null);
+                if (required) {
+                    NotifyUtils.showErrorAutoHide(null, "Valor Requerido", requiredMessage);
+                    this.failedValidation = true;
+                }
                 //fieldModel.set(objectModelBean, null);
             } else {
                 insertIntoFieldModelFromTextComponent(fieldModel, typeFieldModel, methodSetFieldModel, objectModelBean, jTextComponent, pattern, locale);
@@ -694,10 +710,10 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                 }
             }
         } catch (NumberFormatException ex) {
-            NotifyUtils.showErrorAutoHide(null, "Formato Incorrecto", "El valor " + jTextComponent.getText() + " no tiene un formato numérico correcto");
+            NotifyUtils.showErrorAutoHide(null, "Formato Incorrecto", "El valor '" + jTextComponent.getText() + "' no tiene un formato numérico correcto");
             this.failedValidation = true;
         } catch (ParseException ex) {
-            NotifyUtils.showErrorAutoHide(null, "Formato Incorrecto", "El valor " + jTextComponent.getText() + " no tiene un formato correcto");
+            NotifyUtils.showErrorAutoHide(null, "Formato Incorrecto", "El valor '" + jTextComponent.getText() + "' no tiene un formato correcto");
             this.failedValidation = true;
         } catch (IllegalArgumentException ex) {
             Logger.getLogger(AbstractObserverController.class.getName()).log(Level.SEVERE, "IllegalArgumentException", ex);
