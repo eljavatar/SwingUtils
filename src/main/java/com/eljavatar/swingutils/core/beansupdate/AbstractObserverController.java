@@ -61,9 +61,13 @@ import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import javax.swing.JTable;
 import com.eljavatar.swingutils.core.annotations.PaginatedTableView;
+import com.eljavatar.swingutils.core.annotations.PasswordTextView;
 import com.eljavatar.swingutils.core.componentsutils.NotifyUtils;
+import com.eljavatar.swingutils.util.DigestEnum;
+import com.eljavatar.swingutils.util.DigestUtils;
 import com.ibm.icu.text.DecimalFormatSymbols;
 import java.awt.event.ActionListener;
+import java.util.Arrays;
 import java.util.Locale;
 
 /**
@@ -165,6 +169,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         return (fieldView.isAnnotationPresent(TextView.class)
                 || fieldView.isAnnotationPresent(DateTextView.class)
                 || fieldView.isAnnotationPresent(NumberTextView.class)
+                || fieldView.isAnnotationPresent(PasswordTextView.class)
                 || fieldView.isAnnotationPresent(ToggleButtonView.class)
                 || fieldView.isAnnotationPresent(ComboBoxView.class)
                 || fieldView.isAnnotationPresent(TableView.class)
@@ -182,6 +187,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         TextView annotationTextView = fieldView.getAnnotation(TextView.class);
         DateTextView annotationDateTextView = fieldView.getAnnotation(DateTextView.class);
         NumberTextView annotationNumberTextView = fieldView.getAnnotation(NumberTextView.class);
+        PasswordTextView annotationPasswordTextView = fieldView.getAnnotation(PasswordTextView.class);
         ToggleButtonView annotationCheckBoxView = fieldView.getAnnotation(ToggleButtonView.class);
         ComboBoxView annotationComboBoxView = fieldView.getAnnotation(ComboBoxView.class);
         TableView annotationTableView = fieldView.getAnnotation(TableView.class);
@@ -201,6 +207,10 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         }
         if (annotationNumberTextView != null && annotationNumberTextView instanceof NumberTextView) {
             nameComponentView = annotationNumberTextView.name();
+            count++;
+        }
+        if (annotationPasswordTextView != null && annotationPasswordTextView instanceof PasswordTextView) {
+            nameComponentView = annotationPasswordTextView.name();
             count++;
         }
         if (annotationCheckBoxView != null && annotationCheckBoxView instanceof ToggleButtonView) {
@@ -388,9 +398,13 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                                 }
 
                                 Class classModel = objectModelBean.getClass();
-                                //Field[] fieldsModel = classModel.getDeclaredFields();
+                                //Field[] fieldsModel = getFieldsFromSuperClases(classModel, classModel.getDeclaredFields());
+                                //Field fieldModel = getFieldByNameFromArrayFields(fieldsModel, componentViewNameField);
+                                
                                 // Obtenemos el Field del Modelo para hacer la asignación de valores
-                                Field fieldModel = classModel.getDeclaredField(componentViewNameField);
+                                // Field fieldModel = classModel.getDeclaredField(componentViewNameField);
+                                Field fieldModel = getFieldByNameFromSuperClasses(classModel, componentViewNameField);
+                                
                                 fieldModel.setAccessible(true);
                                 Class typeFieldModel = fieldModel.getType();
                                 
@@ -459,7 +473,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
             boolean required = annotationTextView.required();
             String requiredMessage = (annotationTextView.requiredMessage() != null && !annotationTextView.requiredMessage().isEmpty()) ? annotationTextView.requiredMessage() : "El campo '" + nameComponentView + "' debe contener un valor";
             
-            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, null, null, required, requiredMessage);
+            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, null, null, required, requiredMessage, null);
 
         } else if (fieldView.isAnnotationPresent(DateTextView.class)) {
             DateTextView annotationDateTextView = fieldView.getAnnotation(DateTextView.class);
@@ -468,7 +482,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
             boolean required = annotationDateTextView.required();
             String requiredMessage = (annotationDateTextView.requiredMessage() != null && !annotationDateTextView.requiredMessage().isEmpty()) ? annotationDateTextView.requiredMessage() : "El campo '" + nameComponentView + "' debe contener un valor";
 
-            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, pattern, locale, required, requiredMessage);
+            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, pattern, locale, required, requiredMessage, null);
 
         } else if (fieldView.isAnnotationPresent(NumberTextView.class)) {
             NumberTextView annotationNumberTextView = fieldView.getAnnotation(NumberTextView.class);
@@ -477,8 +491,16 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
             boolean required = annotationNumberTextView.required();
             String requiredMessage = (annotationNumberTextView.requiredMessage() != null && !annotationNumberTextView.requiredMessage().isEmpty()) ? annotationNumberTextView.requiredMessage() : "El campo '" + nameComponentView + "' debe contener un valor";
 
-            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, pattern, locale, required, requiredMessage);
+            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, pattern, locale, required, requiredMessage, null);
 
+        } else if (fieldView.isAnnotationPresent(PasswordTextView.class)) {
+            PasswordTextView annotationPasswordTextView = fieldView.getAnnotation(PasswordTextView.class);
+            boolean required = annotationPasswordTextView.required();
+            String requiredMessage = (annotationPasswordTextView.requiredMessage() != null && !annotationPasswordTextView.requiredMessage().isEmpty()) ? annotationPasswordTextView.requiredMessage() : "El campo '" + nameComponentView + "' debe contener un valor";
+            DigestEnum digest = annotationPasswordTextView.digest() != null ? annotationPasswordTextView.digest() : DigestEnum.EMPTY;
+            
+            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, null, null, required, requiredMessage, digest);
+            
         } else if (fieldView.isAnnotationPresent(ToggleButtonView.class)) {
             if (JToggleButton.class.isAssignableFrom(typeComponentView)) {
                 JToggleButton jToggleButton = (JToggleButton) objectComponentView;
@@ -504,18 +526,27 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
             }
         } else if (fieldView.isAnnotationPresent(ComboBoxView.class)) {
             if (typeComponentView == JComboBox.class) {
+                ComboBoxView annotationComboBoxView = fieldView.getAnnotation(ComboBoxView.class);
                 JComboBox jCBcombo = (JComboBox) objectComponentView;
+                boolean required = annotationComboBoxView.required();
+                String requiredMessage = (annotationComboBoxView.requiredMessage() != null && !annotationComboBoxView.requiredMessage().isEmpty()) ? annotationComboBoxView.requiredMessage() : "El campo '" + nameComponentView + "' debe ser obligatorio";
+                
                 ComboBoxModel model = jCBcombo.getModel();
                 if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
                     //fieldModel.set(objectModelBean, model.getSelectedItem());
-                    methodSetFieldModel.invoke(objectModelBean, model.getSelectedItem());
+                    Object value = model.getSelectedItem();
+                    methodSetFieldModel.invoke(objectModelBean, value);
+                    if (value == null && required) {
+                        NotifyUtils.showErrorAutoHide(null, "Valor Requerido", requiredMessage);
+                        this.failedValidation = true;
+                    }
                 }
                 if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
                     //model.setSelectedItem(fieldModel.get(objectModelBean));
                     model.setSelectedItem(methodGetFieldModel.invoke(objectModelBean));
                 }
             } else {
-                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo ComboBox de java swing");
+                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo JComboBox de java swing");
             }
         } else if (fieldView.isAnnotationPresent(TableView.class)) {
             if (typeComponentView == JTable.class) {
@@ -588,10 +619,10 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
      * @throws IllegalArgumentException
      * @throws IllegalAccessException 
      */
-    private void updateGenericTextViewData(Class typeComponentView, Object valueComponentView, String nameComponentView, Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Method methodGetFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, String pattern, Locale locale, boolean required, String requiredMessage) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+    private void updateGenericTextViewData(Class typeComponentView, Object valueComponentView, String nameComponentView, Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Method methodGetFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, String pattern, Locale locale, boolean required, String requiredMessage, DigestEnum digest) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
         if (JTextComponent.class.isAssignableFrom(typeComponentView)) {
             JTextComponent jTFfield = (JTextComponent) valueComponentView;
-            setTextData(fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, jTFfield, pattern, locale, required, requiredMessage);
+            setTextData(fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, jTFfield, pattern, locale, required, requiredMessage, digest);
         } else {
             throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo texto (JTextComponent) en java swing");
         }
@@ -608,7 +639,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
      * @throws IllegalArgumentException
      * @throws IllegalAccessException 
      */
-    private void setTextData(Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Method methodGetFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, JTextComponent jTextComponent, String pattern, Locale locale, boolean required, String requiredMessage) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+    private void setTextData(Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Method methodGetFieldModel, Object objectModelBean, TipoUpdateEnum tipoUpdateEnum, JTextComponent jTextComponent, String pattern, Locale locale, boolean required, String requiredMessage, DigestEnum digest) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
         if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
             if (getTextFromComponent(jTextComponent).isEmpty()) {
                 methodSetFieldModel.invoke(objectModelBean, (Object) null);
@@ -618,7 +649,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                 }
                 //fieldModel.set(objectModelBean, null);
             } else {
-                insertIntoFieldModelFromTextComponent(fieldModel, typeFieldModel, methodSetFieldModel, objectModelBean, jTextComponent, pattern, locale);
+                insertIntoFieldModelFromTextComponent(fieldModel, typeFieldModel, methodSetFieldModel, objectModelBean, jTextComponent, pattern, locale, digest);
             }
         }
 
@@ -638,9 +669,11 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
      * @throws IllegalArgumentException
      * @throws IllegalAccessException 
      */
-    private void insertIntoFieldModelFromTextComponent(Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Object objectModelBean, JTextComponent jTextComponent, String pattern, Locale locale) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+    private void insertIntoFieldModelFromTextComponent(Field fieldModel, Class typeFieldModel, Method methodSetFieldModel, Object objectModelBean, JTextComponent jTextComponent, String pattern, Locale locale, DigestEnum digest) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
         try  {
-            if (typeFieldModel == String.class) {
+            if (digest != null && !Objects.equals(digest, DigestEnum.EMPTY)) {
+                methodSetFieldModel.invoke(objectModelBean, DigestUtils.getStringMessageDigest(getTextFromComponent(jTextComponent), digest.getNombre()));
+            } else if (typeFieldModel == String.class) {
                 methodSetFieldModel.invoke(objectModelBean, getTextFromComponent(jTextComponent));
             } else if (typeFieldModel == Character.class || typeFieldModel == char.class) {
                 methodSetFieldModel.invoke(objectModelBean, getTextFromComponent(jTextComponent).charAt(0));
@@ -853,6 +886,44 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
             }
         }
         return null;
+    }
+    
+    
+    private Field[] getFieldsFromSuperClases(Class<? extends Object> clazz, Field[] fields) {
+        if (clazz.getSuperclass() != null) {
+            Class<?> superClass = clazz.getSuperclass();
+            Field[] fieldsSuperClass = superClass.getDeclaredFields();
+            for (Field f : fieldsSuperClass) {
+                fields = Arrays.copyOf(fields, fields.length + 1);
+                fields[fields.length - 1] = f;
+            }
+            fields = getFieldsFromSuperClases(superClass, fields);
+        }
+        return fields;
+    }
+    
+    private Field getFieldByNameFromArrayFields(Field[] fields, String nameField) {
+        for (Field field : fields) {
+            if (Objects.equals(field.getName(), nameField)) {
+                return field;
+            }
+        }
+        return null;
+    }
+    
+    private Field getFieldByNameFromSuperClasses(Class<? extends Object> clazz, String nameField) throws NoSuchFieldException, SecurityException {
+        try {
+            return clazz.getDeclaredField(nameField);
+        } catch (NoSuchFieldException ex) {
+            if (clazz.getSuperclass() == null) {
+                throw ex;
+            } else {
+                Class<?> superClass = clazz.getSuperclass();
+                return getFieldByNameFromSuperClasses(superClass, nameField);
+            }
+        } catch (SecurityException ex) {
+            throw ex;
+        }
     }
     
 }

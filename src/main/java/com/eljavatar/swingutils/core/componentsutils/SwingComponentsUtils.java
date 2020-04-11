@@ -59,6 +59,10 @@ public class SwingComponentsUtils {
         mostrarMensaje(parent, mensaje, titulo, QUESTION, new javax.swing.ImageIcon(SwingComponentsUtils.class.getResource("/images/dialog-confirm.png")));
     }
     
+    public static int showConfirmDialog(Component parent, String mensaje, String titulo, int optionType) {
+        return JOptionPane.showConfirmDialog(parent, mensaje, titulo, optionType, QUESTION, new javax.swing.ImageIcon(SwingComponentsUtils.class.getResource("/images/dialog-confirm.png")));
+    }
+    
     public static void enabledComponents(JComponent component, boolean enabled) {
         for (Component c : component.getComponents()) {
             if (c instanceof JComponent) {
