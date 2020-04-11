@@ -65,7 +65,7 @@ public class PaginationDataProvider<T> extends JTableDataProvider<T> implements 
             getListData().sort((T o1, T o2) -> {
                 try {
                     Class clazz = o1.getClass();
-                    Field field = clazz.getDeclaredField(sortField);
+                    Field field = getFieldByNameFromSuperClasses(clazz, sortField);
                     PropertyDescriptor propertyDescriptor = new PropertyDescriptor(field.getName(), field.getDeclaringClass());
                     Method methodGetField = propertyDescriptor.getReadMethod();
 
@@ -95,7 +95,7 @@ public class PaginationDataProvider<T> extends JTableDataProvider<T> implements 
                 listaFiltrada = getListData().stream().map((objectData) -> {
                     try {
                         Class clazz = objectData.getClass();
-                        Field field = clazz.getDeclaredField(keyFilter);
+                        Field field = getFieldByNameFromSuperClasses(clazz, keyFilter);
                         PropertyDescriptor propertyDescriptor = new PropertyDescriptor(field.getName(), field.getDeclaringClass());
                         Method methodGetField = propertyDescriptor.getReadMethod();
                         
@@ -139,6 +139,21 @@ public class PaginationDataProvider<T> extends JTableDataProvider<T> implements 
                 endIndex = listaFiltrada.size();
             }
             return listaFiltrada.subList(startIndex, endIndex);
+        }
+    }
+    
+    private Field getFieldByNameFromSuperClasses(Class<? extends Object> clazz, String nameField) throws NoSuchFieldException, SecurityException {
+        try {
+            return clazz.getDeclaredField(nameField);
+        } catch (NoSuchFieldException ex) {
+            if (clazz.getSuperclass() == null) {
+                throw ex;
+            } else {
+                Class<?> superClass = clazz.getSuperclass();
+                return getFieldByNameFromSuperClasses(superClass, nameField);
+            }
+        } catch (SecurityException ex) {
+            throw ex;
         }
     }
     
