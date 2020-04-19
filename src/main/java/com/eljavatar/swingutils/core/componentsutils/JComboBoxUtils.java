@@ -18,6 +18,7 @@ package com.eljavatar.swingutils.core.componentsutils;
 import com.eljavatar.swingutils.core.renderercomponents.ComboBoxRendererDefault;
 import com.eljavatar.swingutils.core.modelcomponents.ComboBoxModelGeneric;
 import java.util.List;
+import java.util.function.Function;
 import javax.swing.JComboBox;
 import javax.swing.ListCellRenderer;
 
@@ -26,6 +27,15 @@ import javax.swing.ListCellRenderer;
  * @author Andres Mauricio (http://www.eljavatar.com)
  */
 public class JComboBoxUtils {
+    
+    public synchronized static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean addElementNullDefault, String textNoSeleccionable, boolean isSynchronized, boolean needDetectConcurrentModifications, Class<E> clazz, Function<E, String> functionLabel, Function<E, String> functionTooltip) {
+        ComboBoxModelGeneric<E> model = new ComboBoxModelGeneric<>(list, addElementNullDefault, isSynchronized, needDetectConcurrentModifications);
+        jComboBox.setModel(model);
+        
+        ListCellRenderer rendererDefault = jComboBox.getRenderer();
+        ComboBoxRendererDefault renderer = new ComboBoxRendererDefault(jComboBox, rendererDefault, textNoSeleccionable, functionLabel, functionTooltip);
+        jComboBox.setRenderer(renderer);
+    }
     
     /**
      * 
@@ -40,17 +50,41 @@ public class JComboBoxUtils {
      *      define si necesita detectar modificaciones concurrentes, ya que de acuerdo a esta
      *      opción, se decide cuál será la implementacion óptima para crear la lista de datos
      * @param clazz Class del tipo de objeto que usará el JComboBox
-     * @param nameMethod Nombre del método que retornará el texto que se mostrará cada ítem
-     *      del JComboBox. Este método debe estar declarado en la clase del tipo de objeto
+     * @param nameMethodLabel Nombre del método que retornará el texto que se mostrará en cada
+     *      ítem del JComboBox. Este método debe estar declarado en la clase del tipo de objeto
      *      que usará el JComboBox
+     * @param nameMethodTooltip Nombre del método que retornará el texto que se mostrará  en el
+     *      tooltip de cada ítem del JComboBox. Este método debe estar declarado en la clase del
+     *      tipo de objeto que usará el JComboBox
      */
-    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean addElementNullDefault, String textNoSeleccionable, boolean isSynchronized, boolean needDetectConcurrentModifications, Class clazz, String nameMethod) {
+    public synchronized static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean addElementNullDefault, String textNoSeleccionable, boolean isSynchronized, boolean needDetectConcurrentModifications, Class<E> clazz, String nameMethodLabel, String nameMethodTooltip) {
         ComboBoxModelGeneric<E> model = new ComboBoxModelGeneric<>(list, addElementNullDefault, isSynchronized, needDetectConcurrentModifications);
         jComboBox.setModel(model);
         
         ListCellRenderer rendererDefault = jComboBox.getRenderer();
-        ComboBoxRendererDefault renderer = new ComboBoxRendererDefault(jComboBox, rendererDefault, textNoSeleccionable, clazz, nameMethod);
+        ComboBoxRendererDefault renderer = new ComboBoxRendererDefault(jComboBox, rendererDefault, textNoSeleccionable, clazz, nameMethodLabel, nameMethodTooltip);
         jComboBox.setRenderer(renderer);
+    }
+    
+    /**
+     * 
+     * @param <E> Tipo de objeto que usará el JComboBox
+     * @param jComboBox JComboBox al cual queremos aplicar las propiedades
+     * @param list Lista de objetos que se mostrarán en el JComboBox
+     * @param addElementNullDefault Indica si se desea agregar un elemento nulo por defecto y
+     *      no seleccionable al principio de la lista
+     * @param textNoSeleccionable Texto que se mostrará en el ítem no seleccionable
+     * @param isSynchronized Define si la lista de elementos será una colección sincronizada
+     * @param needDetectConcurrentModifications En caso de que sea una colección sincronizada,
+     *      define si necesita detectar modificaciones concurrentes, ya que de acuerdo a esta
+     *      opción, se decide cuál será la implementacion óptima para crear la lista de datos
+     * @param clazz Class del tipo de objeto que usará el JComboBox
+     * @param nameMethodLabel Nombre del método que retornará el texto que se mostrará en cada
+     *      ítem del JComboBox. Este método debe estar declarado en la clase del tipo de objeto
+     *      que usará el JComboBox
+     */
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean addElementNullDefault, String textNoSeleccionable, boolean isSynchronized, boolean needDetectConcurrentModifications, Class<E> clazz, String nameMethodLabel) {
+        JComboBoxUtils.setProperties(jComboBox, list, addElementNullDefault, textNoSeleccionable, isSynchronized, needDetectConcurrentModifications, clazz, nameMethodLabel, null);
     }
     
     /**
@@ -70,6 +104,10 @@ public class JComboBoxUtils {
         JComboBoxUtils.setProperties(jComboBox, list, addElementNullDefault, textNoSeleccionable, isSynchronized, needDetectConcurrentModifications, null, null);
     }
     
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, String textNoSeleccionable, boolean isSynchronized, boolean needDetectConcurrentModifications, Class<E> clazz, Function<E, String> functionLabel, Function<E, String> functionTooltip) {
+        JComboBoxUtils.setProperties(jComboBox, list, true, textNoSeleccionable, isSynchronized, needDetectConcurrentModifications, clazz, functionLabel, functionTooltip);
+    }
+    
     /**
      * 
      * @param <E> Tipo de objeto que usará el JComboBox
@@ -81,12 +119,34 @@ public class JComboBoxUtils {
      *      define si necesita detectar modificaciones concurrentes, ya que de acuerdo a esta
      *      opción, se decide cuál será la implementacion óptima para crear la lista de datos
      * @param clazz Class del tipo de objeto que usará el JComboBox
-     * @param nameMethod Nombre del método que retornará el texto que se mostrará cada ítem
-     *      del JComboBox. Este método debe estar declarado en la clase del tipo de objeto
+     * @param nameMethodLabel Nombre del método que retornará el texto que se mostrará en cada
+     *      ítem del JComboBox. Este método debe estar declarado en la clase del tipo de objeto
+     *      que usará el JComboBox
+     * @param nameMethodTooltip Nombre del método que retornará el texto que se mostrará  en el
+     *      tooltip de cada ítem del JComboBox. Este método debe estar declarado en la clase del
+     *      tipo de objeto que usará el JComboBox
+     */
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, String textNoSeleccionable, boolean isSynchronized, boolean needDetectConcurrentModifications, Class<E> clazz, String nameMethodLabel, String nameMethodTooltip) {
+        JComboBoxUtils.setProperties(jComboBox, list, true, textNoSeleccionable, isSynchronized, needDetectConcurrentModifications, clazz, nameMethodLabel, nameMethodTooltip);
+    }
+    
+    /**
+     * 
+     * @param <E> Tipo de objeto que usará el JComboBox
+     * @param jComboBox JComboBox al cual queremos aplicar las propiedades
+     * @param list Lista de objetos que se mostrarán en el JComboBox
+     * @param textNoSeleccionable Texto que se mostrará en el ítem no seleccionable
+     * @param isSynchronized Define si la lista de elementos será una colección sincronizada
+     * @param needDetectConcurrentModifications En caso de que sea una colección sincronizada,
+     *      define si necesita detectar modificaciones concurrentes, ya que de acuerdo a esta
+     *      opción, se decide cuál será la implementacion óptima para crear la lista de datos
+     * @param clazz Class del tipo de objeto que usará el JComboBox
+     * @param nameMethodLabel Nombre del método que retornará el texto que se mostrará en cada
+     *      ítem del JComboBox. Este método debe estar declarado en la clase del tipo de objeto
      *      que usará el JComboBox
      */
-    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, String textNoSeleccionable, boolean isSynchronized, boolean needDetectConcurrentModifications, Class clazz, String nameMethod) {
-        JComboBoxUtils.setProperties(jComboBox, list, true, textNoSeleccionable, isSynchronized, needDetectConcurrentModifications, clazz, nameMethod);
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, String textNoSeleccionable, boolean isSynchronized, boolean needDetectConcurrentModifications, Class<E> clazz, String nameMethodLabel) {
+        JComboBoxUtils.setProperties(jComboBox, list, true, textNoSeleccionable, isSynchronized, needDetectConcurrentModifications, clazz, nameMethodLabel);
     }
     
     /**
@@ -104,6 +164,10 @@ public class JComboBoxUtils {
         JComboBoxUtils.setProperties(jComboBox, list, true, textNoSeleccionable, isSynchronized, needDetectConcurrentModifications, null, null);
     }
     
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean isSynchronized, boolean needDetectConcurrentModifications, Class<E> clazz, Function<E, String> functionLabel, Function<E, String> functionTooltip) {
+        JComboBoxUtils.setProperties(jComboBox, list, true, "- Seleccione -", isSynchronized, needDetectConcurrentModifications, clazz, functionLabel, functionTooltip);
+    }
+    
     /**
      * 
      * @param <E> Tipo de objeto que usará el JComboBox
@@ -114,12 +178,33 @@ public class JComboBoxUtils {
      *      define si necesita detectar modificaciones concurrentes, ya que de acuerdo a esta
      *      opción, se decide cuál será la implementacion óptima para crear la lista de datos
      * @param clazz Class del tipo de objeto que usará el JComboBox
-     * @param nameMethod Nombre del método que retornará el texto que se mostrará cada ítem
-     *      del JComboBox. Este método debe estar declarado en la clase del tipo de objeto
+     * @param nameMethodLabel Nombre del método que retornará el texto que se mostrará en cada
+     *      ítem del JComboBox. Este método debe estar declarado en la clase del tipo de objeto
+     *      que usará el JComboBox
+     * @param nameMethodTooltip Nombre del método que retornará el texto que se mostrará  en el
+     *      tooltip de cada ítem del JComboBox. Este método debe estar declarado en la clase del
+     *      tipo de objeto que usará el JComboBox
+     */
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean isSynchronized, boolean needDetectConcurrentModifications, Class<E> clazz, String nameMethodLabel, String nameMethodTooltip) {
+        JComboBoxUtils.setProperties(jComboBox, list, true, "- Seleccione -", isSynchronized, needDetectConcurrentModifications, clazz, nameMethodLabel, nameMethodTooltip);
+    }
+    
+    /**
+     * 
+     * @param <E> Tipo de objeto que usará el JComboBox
+     * @param jComboBox JComboBox al cual queremos aplicar las propiedades
+     * @param list Lista de objetos que se mostrarán en el JComboBox
+     * @param isSynchronized Define si la lista de elementos será una colección sincronizada
+     * @param needDetectConcurrentModifications En caso de que sea una colección sincronizada,
+     *      define si necesita detectar modificaciones concurrentes, ya que de acuerdo a esta
+     *      opción, se decide cuál será la implementacion óptima para crear la lista de datos
+     * @param clazz Class del tipo de objeto que usará el JComboBox
+     * @param nameMethodLabel Nombre del método que retornará el texto que se mostrará en cada
+     *      ítem del JComboBox. Este método debe estar declarado en la clase del tipo de objeto
      *      que usará el JComboBox
      */
-    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean isSynchronized, boolean needDetectConcurrentModifications, Class clazz, String nameMethod) {
-        JComboBoxUtils.setProperties(jComboBox, list, true, "- Seleccione -", isSynchronized, needDetectConcurrentModifications, clazz, nameMethod);
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean isSynchronized, boolean needDetectConcurrentModifications, Class<E> clazz, String nameMethodLabel) {
+        JComboBoxUtils.setProperties(jComboBox, list, true, "- Seleccione -", isSynchronized, needDetectConcurrentModifications, clazz, nameMethodLabel);
     }
     
     /**
@@ -136,6 +221,10 @@ public class JComboBoxUtils {
         JComboBoxUtils.setProperties(jComboBox, list, true, "- Seleccione -", isSynchronized, needDetectConcurrentModifications, null, null);
     }
     
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean addElementNullDefault, String textNoSeleccionable, Class<E> clazz, Function<E, String> functionLabel, Function<E, String> functionTooltip) {
+        JComboBoxUtils.setProperties(jComboBox, list, addElementNullDefault, textNoSeleccionable, false, true, clazz, functionLabel, functionTooltip);
+    }
+    
     /**
      * 
      * @param <E> Tipo de objeto que usará el JComboBox
@@ -145,12 +234,32 @@ public class JComboBoxUtils {
      *      y no seleccionable al principio de la lista
      * @param textNoSeleccionable Texto que se mostrará en el ítem no seleccionable
      * @param clazz Class del tipo de objeto que usará el JComboBox
-     * @param nameMethod Nombre del método que retornará el texto que se mostrará cada ítem
+     * @param nameMethodLabel Nombre del método que retornará el texto que se mostrará cada ítem
      *      del JComboBox. Este método debe estar declarado en la clase del tipo de objeto
      *      que usará el JComboBox
+     * @param nameMethodTooltip Nombre del método que retornará el texto que se mostrará  en el
+     *      tooltip de cada ítem del JComboBox. Este método debe estar declarado en la clase del
+     *      tipo de objeto que usará el JComboBox
      */
-    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean addElementNullDefault, String textNoSeleccionable, Class clazz, String nameMethod) {
-        JComboBoxUtils.setProperties(jComboBox, list, addElementNullDefault, textNoSeleccionable, false, true, clazz, nameMethod);
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean addElementNullDefault, String textNoSeleccionable, Class<E> clazz, String nameMethodLabel, String nameMethodTooltip) {
+        JComboBoxUtils.setProperties(jComboBox, list, addElementNullDefault, textNoSeleccionable, false, true, clazz, nameMethodLabel, nameMethodTooltip);
+    }
+    
+    /**
+     * 
+     * @param <E> Tipo de objeto que usará el JComboBox
+     * @param jComboBox JComboBox al cual queremos aplicar las propiedades
+     * @param list Lista de objetos que se mostrarán en el JComboBox
+     * @param addElementNullDefault Indica si se desea agregar un elemento nulo por defecto
+     *      y no seleccionable al principio de la lista
+     * @param textNoSeleccionable Texto que se mostrará en el ítem no seleccionable
+     * @param clazz Class del tipo de objeto que usará el JComboBox
+     * @param nameMethodLabel Nombre del método que retornará el texto que se mostrará en cada
+     *      ítem del JComboBox. Este método debe estar declarado en la clase del tipo de objeto
+     *      que usará el JComboBox
+     */
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, boolean addElementNullDefault, String textNoSeleccionable, Class<E> clazz, String nameMethodLabel) {
+        JComboBoxUtils.setProperties(jComboBox, list, addElementNullDefault, textNoSeleccionable, false, true, clazz, nameMethodLabel);
     }
     
     /**
@@ -166,6 +275,10 @@ public class JComboBoxUtils {
         JComboBoxUtils.setProperties(jComboBox, list, addElementNullDefault, textNoSeleccionable, false, true, null, null);
     }
     
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, String textNoSeleccionable, Class<E> clazz, Function<E, String> functionLabel, Function<E, String> functionTooltip) {
+        JComboBoxUtils.setProperties(jComboBox, list, true, textNoSeleccionable, false, true, clazz, functionLabel, functionTooltip);
+    }
+    
     /**
      * 
      * @param <E> Tipo de objeto que usará el JComboBox
@@ -173,12 +286,30 @@ public class JComboBoxUtils {
      * @param list Lista de objetos que se mostrarán en el JComboBox
      * @param textNoSeleccionable Texto que se mostrará en el ítem no seleccionable
      * @param clazz Class del tipo de objeto que usará el JComboBox
-     * @param nameMethod Nombre del método que retornará el texto que se mostrará cada ítem
+     * @param nameMethodLabel Nombre del método que retornará el texto que se mostrará en cada
+     *      ítem del JComboBox. Este método debe estar declarado en la clase del tipo de objeto
+     *      que usará el JComboBox
+     * @param nameMethodTooltip Nombre del método que retornará el texto que se mostrará  en el
+     *      tooltip de cada ítem del JComboBox. Este método debe estar declarado en la clase del
+     *      tipo de objeto que usará el JComboBox
+     */
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, String textNoSeleccionable, Class<E> clazz, String nameMethodLabel, String nameMethodTooltip) {
+        JComboBoxUtils.setProperties(jComboBox, list, true, textNoSeleccionable, false, true, clazz, nameMethodLabel, nameMethodTooltip);
+    }
+    
+    /**
+     * 
+     * @param <E> Tipo de objeto que usará el JComboBox
+     * @param jComboBox JComboBox al cual queremos aplicar las propiedades
+     * @param list Lista de objetos que se mostrarán en el JComboBox
+     * @param textNoSeleccionable Texto que se mostrará en el ítem no seleccionable
+     * @param clazz Class del tipo de objeto que usará el JComboBox
+     * @param nameMethodLabel Nombre del método que retornará el texto que se mostrará cada ítem
      *      del JComboBox. Este método debe estar declarado en la clase del tipo de objeto
      *      que usará el JComboBox
      */
-    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, String textNoSeleccionable, Class clazz, String nameMethod) {
-        JComboBoxUtils.setProperties(jComboBox, list, true, textNoSeleccionable, false, true, clazz, nameMethod);
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, String textNoSeleccionable, Class<E> clazz, String nameMethodLabel) {
+        JComboBoxUtils.setProperties(jComboBox, list, true, textNoSeleccionable, false, true, clazz, nameMethodLabel);
     }
     
     /**
@@ -192,18 +323,39 @@ public class JComboBoxUtils {
         JComboBoxUtils.setProperties(jComboBox, list, true, textNoSeleccionable, false, true, null, null);
     }
     
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, Class<E> clazz, Function<E, String> functionLabel, Function<E, String> functionTooltip) {
+        JComboBoxUtils.setProperties(jComboBox, list, true, "- Seleccione -", false, true, clazz, functionLabel, functionTooltip);
+    }
+    
     /**
      * 
      * @param <E> Tipo de objeto que usará el JComboBox
      * @param jComboBox JComboBox al cual queremos aplicar las propiedades
      * @param list Lista de objetos que se mostrarán en el JComboBox
      * @param clazz Class del tipo de objeto que usará el JComboBox
-     * @param nameMethod Nombre del método que retornará el texto que se mostrará cada ítem
-     *      del JComboBox. Este método debe estar declarado en la clase del tipo de objeto
+     * @param nameMethodLabel Nombre del método que retornará el texto que se mostrará en cada
+     *      ítem del JComboBox. Este método debe estar declarado en la clase del tipo de objeto
+     *      que usará el JComboBox
+     * @param nameMethodTooltip Nombre del método que retornará el texto que se mostrará  en el
+     *      tooltip de cada ítem del JComboBox. Este método debe estar declarado en la clase del
+     *      tipo de objeto que usará el JComboBox
+     */
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, Class<E> clazz, String nameMethodLabel, String nameMethodTooltip) {
+        JComboBoxUtils.setProperties(jComboBox, list, true, "- Seleccione -", false, true, clazz, nameMethodLabel, nameMethodTooltip);
+    }
+    
+    /**
+     * 
+     * @param <E> Tipo de objeto que usará el JComboBox
+     * @param jComboBox JComboBox al cual queremos aplicar las propiedades
+     * @param list Lista de objetos que se mostrarán en el JComboBox
+     * @param clazz Class del tipo de objeto que usará el JComboBox
+     * @param nameMethodLabel Nombre del método que retornará el texto que se mostrará en cada
+     *      ítem del JComboBox. Este método debe estar declarado en la clase del tipo de objeto
      *      que usará el JComboBox
      */
-    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, Class clazz, String nameMethod) {
-        JComboBoxUtils.setProperties(jComboBox, list, true, "- Seleccione -", false, true, clazz, nameMethod);
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, Class<E> clazz, String nameMethodLabel) {
+        JComboBoxUtils.setProperties(jComboBox, list, true, "- Seleccione -", false, true, clazz, nameMethodLabel);
     }
     
     /**

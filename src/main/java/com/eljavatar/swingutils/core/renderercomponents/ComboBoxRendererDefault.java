@@ -18,6 +18,7 @@ package com.eljavatar.swingutils.core.renderercomponents;
 import java.awt.Component;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.ComboBoxModel;
@@ -35,14 +36,19 @@ public class ComboBoxRendererDefault extends BasicComboBoxRenderer implements JC
 
     private final String textNoSeleccionable;
     private final ListCellRenderer rendererDefault;
-    private Method method;
+    private Method methodLabel;
+    private Method methodTooltip;
+    
+    private Function<Object, String> functionLabel;
+    private Function<Object, String> functionTooltip;
 
     private long timeFactor;
     private long lastTime;
     private long currentTime;
     private String prefix = "";
-
-    public ComboBoxRendererDefault(JComboBox jComboBox, ListCellRenderer rendererDefault, String textNoSeleccionable, Class clazz, String nameMethod) {
+    
+    
+    private ComboBoxRendererDefault(JComboBox jComboBox, ListCellRenderer rendererDefault, String textNoSeleccionable) {
         super();
         this.rendererDefault = rendererDefault;
         this.textNoSeleccionable = textNoSeleccionable;
@@ -52,17 +58,30 @@ public class ComboBoxRendererDefault extends BasicComboBoxRenderer implements JC
 
         Long value = (Long) UIManager.get("ComboBox.timeFactor");
         timeFactor = value == null ? 250L : value;
+    }
 
-        if (clazz != null && nameMethod != null) {
+    public ComboBoxRendererDefault(JComboBox jComboBox, ListCellRenderer rendererDefault, String textNoSeleccionable, Class clazz, String nameMethodLabel, String nameMethodTooltip) {
+        this(jComboBox, rendererDefault, textNoSeleccionable);
+        
+        if (clazz != null) {
             try {
-                this.method = clazz.getMethod(nameMethod);
+                this.methodLabel = nameMethodLabel != null ? clazz.getMethod(nameMethodLabel) : null;
+                this.methodTooltip = nameMethodTooltip != null ? clazz.getMethod(nameMethodTooltip) : null;
             } catch (NoSuchMethodException | SecurityException ex) {
                 Logger.getLogger(ComboBoxRendererDefault.class.getName()).log(Level.SEVERE, null, ex);
             }
         } else {
-            this.method = null;
+            this.methodLabel = null;
+            this.methodTooltip = null;
         }
 
+    }
+    
+    public ComboBoxRendererDefault(JComboBox jComboBox, ListCellRenderer rendererDefault, String textNoSeleccionable, Function functionLabel, Function functionTooltip) {
+        this(jComboBox, rendererDefault, textNoSeleccionable);
+        
+        this.functionLabel = functionLabel != null ? functionLabel : null;
+        this.functionTooltip = functionTooltip != null ? functionTooltip : null;
     }
 
     @Override
@@ -71,6 +90,7 @@ public class ComboBoxRendererDefault extends BasicComboBoxRenderer implements JC
         javax.swing.JLabel label = (javax.swing.JLabel) component;
 
         label.setText(getDisplayValue(value));
+        label.setToolTipText(getTooltipValue(value));
 
         return label;
     }
@@ -142,20 +162,44 @@ public class ComboBoxRendererDefault extends BasicComboBoxRenderer implements JC
     /**
      * This method must be implemented in the extended class.
      *
-     * @param value an item from the ComboBoxModel
+     * @param valueItem an item from the ComboBoxModel
      * @return a String containing the text to be rendered for this item.
      */
-    public String getDisplayValue(Object value) {
+    public String getDisplayValue(Object valueItem) {
         String text;
-        if (method != null && value != null) {
+        if (methodLabel != null && valueItem != null) {
             try {
-                text = (String) method.invoke(value);
+                text = (String) methodLabel.invoke(valueItem);
             } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
-                text = value.toString();
+                text = valueItem.toString();
                 Logger.getLogger(ComboBoxRendererDefault.class.getName()).log(Level.SEVERE, null, ex);
             }
+        } else if (functionLabel != null && valueItem != null) {
+            text = functionLabel.apply(valueItem);
         } else {
-            text = (value == null) ? textNoSeleccionable : value.toString();
+            text = (valueItem == null) ? textNoSeleccionable : valueItem.toString();
+        }
+        return text;
+    };
+    
+    /**
+     * 
+     * @param valueItem an item from the ComboBoxModel
+     * @return a String containing the text to be rendered for the tooltip
+     */
+    public String getTooltipValue(Object valueItem) {
+        String text;
+        if (methodTooltip != null && valueItem != null) {
+            try {
+                text = (String) methodTooltip.invoke(valueItem);
+            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+                text = valueItem.toString();
+                Logger.getLogger(ComboBoxRendererDefault.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } else if (functionTooltip != null && valueItem != null) {
+            text = functionTooltip.apply(valueItem);
+        } else {
+            text = null;
         }
         return text;
     };
