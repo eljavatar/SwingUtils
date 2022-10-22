@@ -279,6 +279,10 @@ public class JComboBoxUtils {
         JComboBoxUtils.setProperties(jComboBox, list, true, textNoSeleccionable, false, true, clazz, functionLabel, functionTooltip);
     }
     
+    public static <E> void setProperties(final JComboBox<E> jComboBox, List<E> list, String textNoSeleccionable, Class<E> clazz, Function<E, String> functionLabel) {
+        JComboBoxUtils.setProperties(jComboBox, list, true, textNoSeleccionable, false, true, clazz, functionLabel, null);
+    }
+    
     /**
      * 
      * @param <E> Tipo de objeto que usará el JComboBox

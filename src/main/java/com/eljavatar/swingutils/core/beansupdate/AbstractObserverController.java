@@ -19,7 +19,6 @@ import com.eljavatar.swingutils.core.annotations.ComboBoxView;
 import com.eljavatar.swingutils.core.annotations.ComponentView;
 import com.eljavatar.swingutils.core.annotations.ModelBean;
 import com.eljavatar.swingutils.core.annotations.TextView;
-import com.eljavatar.swingutils.util.StringUtils;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -49,24 +48,16 @@ import com.eljavatar.swingutils.core.annotations.PropertyController;
 import com.eljavatar.swingutils.core.annotations.TableView;
 import java.util.Iterator;
 import java.util.List;
-import javax.swing.ComboBoxModel;
-import javax.swing.JComboBox;
-import javax.swing.JToggleButton;
 import com.eljavatar.swingutils.core.annotations.ToggleButtonView;
-import com.eljavatar.swingutils.core.components.PaginatedTable;
-import com.eljavatar.swingutils.core.modelcomponents.PaginationDataProvider;
-import com.eljavatar.swingutils.core.modelcomponents.TableModelGeneric;
 import com.ibm.icu.text.DecimalFormat;
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
-import javax.swing.JTable;
 import com.eljavatar.swingutils.core.annotations.PaginatedTableView;
 import com.eljavatar.swingutils.core.annotations.PasswordTextView;
 import com.eljavatar.swingutils.core.componentsutils.NotifyUtils;
 import com.eljavatar.swingutils.util.DigestEnum;
 import com.eljavatar.swingutils.util.DigestUtils;
 import com.ibm.icu.text.DecimalFormatSymbols;
-import java.awt.event.ActionListener;
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -84,7 +75,7 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
     private boolean failedValidation;
     
     public AbstractObserverController() {
-        // Constructor vacio por defecto
+        //ApplicationContext.getInstance(null);
     }
     
     public AbstractObserverController(C controller, V view) {
@@ -106,7 +97,9 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
     }
     
     public boolean hasFailedValidation() {
-        return failedValidation;
+        boolean hasFailed = failedValidation;
+        this.failedValidation = false;
+        return hasFailed;
     }
     
     /**
@@ -128,7 +121,39 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
      *               <code>ObjectUpdate</code> lo usamos cuando deseamos que solo se actualicen ciertos objetos en especifico
      */
     protected void changeData(Object object) {
+        //ApplicationContext.getInstance().clearListNotify();
+        
         this.observable.changeData(object);
+
+
+//        Thread t = new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                for (Notify notify : ApplicationContext.getInstance().getListNotifyError()) {
+//                    notify.showError();
+//                }
+//                for (Notify notify : ApplicationContext.getInstance().getListNotifyWarning()) {
+//                    notify.showWarning();
+//                }
+//            }
+//        });
+//        t.run();
+
+
+        //ApplicationContext.getInstance().clearListNotify();
+    }
+    
+    
+    private static ClassLoader getThreadContextLoader() throws IllegalAccessException, InvocationTargetException {
+        // Si ejecutamos sobre JDK 1.2 o superior
+        Method method;
+        try {
+            method = Thread.class.getMethod("getContextClassLoader");
+        } catch (NoSuchMethodException e) {
+            // En caso de que ejecutemos sobre JDK 1.1 o inferior
+            return null;
+        }
+        return (ClassLoader) method.invoke(Thread.currentThread());
     }
     
     /**
@@ -394,6 +419,8 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
                             if (Objects.equals(componentViewNameModel, nameComponentController)) {
                                 Object objectModelBean = fieldController.get(controller);
                                 if (objectModelBean == null) {
+                                    //Class clazzObjectModelBean = fieldController.getType();
+                                    //objectModelBean = clazzObjectModelBean.getConstructor().newInstance();
                                     throw new NullPointerException("ModelBean " + nameComponentController + " no se ha inicializado");
                                 }
 
@@ -467,143 +494,150 @@ public class AbstractObserverController<C extends Observer, V> implements Observ
         if (methodGetFieldModel == null) {
             throw new NoSuchMethodException("El atributo " + fieldModel.getName() + " no tiene metodo público set");
         }
+        
+        ParametersToAsignValue params = new ParametersToAsignValue(fieldView, nameComponentView, typeComponentView, tipoUpdateEnum, fieldModel, typeFieldModel, objectModelBean, objectComponentView, methodSetFieldModel, methodGetFieldModel, failedValidation);
+        ComponentAnnotatedViewContext context = new ComponentAnnotatedViewContext(ComponentAnnotatedViewFactory.getStrategy(fieldView));
+        context.asignValue(params);
+        
+        this.failedValidation = failedValidation ? failedValidation : params.isFailedValidation();
+        
 
-        if (fieldView.isAnnotationPresent(TextView.class)) {
-            TextView annotationTextView = fieldView.getAnnotation(TextView.class);
-            boolean required = annotationTextView.required();
-            String requiredMessage = (annotationTextView.requiredMessage() != null && !annotationTextView.requiredMessage().isEmpty()) ? annotationTextView.requiredMessage() : "El campo '" + nameComponentView + "' debe contener un valor";
-            
-            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, null, null, required, requiredMessage, null);
-
-        } else if (fieldView.isAnnotationPresent(DateTextView.class)) {
-            DateTextView annotationDateTextView = fieldView.getAnnotation(DateTextView.class);
-            String pattern = annotationDateTextView.pattern();
-            Locale locale = annotationDateTextView.locale() != null ? annotationDateTextView.locale().getLocale() : null;
-            boolean required = annotationDateTextView.required();
-            String requiredMessage = (annotationDateTextView.requiredMessage() != null && !annotationDateTextView.requiredMessage().isEmpty()) ? annotationDateTextView.requiredMessage() : "El campo '" + nameComponentView + "' debe contener un valor";
-
-            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, pattern, locale, required, requiredMessage, null);
-
-        } else if (fieldView.isAnnotationPresent(NumberTextView.class)) {
-            NumberTextView annotationNumberTextView = fieldView.getAnnotation(NumberTextView.class);
-            String pattern = annotationNumberTextView.pattern();
-            Locale locale = annotationNumberTextView.locale() != null ? annotationNumberTextView.locale().getLocale() : null;
-            boolean required = annotationNumberTextView.required();
-            String requiredMessage = (annotationNumberTextView.requiredMessage() != null && !annotationNumberTextView.requiredMessage().isEmpty()) ? annotationNumberTextView.requiredMessage() : "El campo '" + nameComponentView + "' debe contener un valor";
-
-            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, pattern, locale, required, requiredMessage, null);
-
-        } else if (fieldView.isAnnotationPresent(PasswordTextView.class)) {
-            PasswordTextView annotationPasswordTextView = fieldView.getAnnotation(PasswordTextView.class);
-            boolean required = annotationPasswordTextView.required();
-            String requiredMessage = (annotationPasswordTextView.requiredMessage() != null && !annotationPasswordTextView.requiredMessage().isEmpty()) ? annotationPasswordTextView.requiredMessage() : "El campo '" + nameComponentView + "' debe contener un valor";
-            DigestEnum digest = annotationPasswordTextView.digest() != null ? annotationPasswordTextView.digest() : DigestEnum.EMPTY;
-            
-            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, null, null, required, requiredMessage, digest);
-            
-        } else if (fieldView.isAnnotationPresent(ToggleButtonView.class)) {
-            if (JToggleButton.class.isAssignableFrom(typeComponentView)) {
-                JToggleButton jToggleButton = (JToggleButton) objectComponentView;
-                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
-                    //fieldModel.set(objectModelBean, jToggleButton.isSelected());
-                    methodSetFieldModel.invoke(objectModelBean, jToggleButton.isSelected());
-                }
-                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
-                    if (typeFieldModel == Boolean.class || typeFieldModel == boolean.class) {
-                        //Boolean bool = (Boolean) fieldModel.get(objectModelBean);
-                        Boolean bool = (Boolean) methodGetFieldModel.invoke(objectModelBean);
-                        jToggleButton.setSelected(bool != null ? bool : Boolean.FALSE);
-                        for (ActionListener actionListener : jToggleButton.getActionListeners()) {
-                            actionListener.actionPerformed(null);
-                        }
-                    } else {
-                        throw new IllegalArgumentException("Atributo in Model " + fieldModel.getName() + " no es de tipo boolean");
-                    }
-                }
-
-            } else {
-                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo JToggleButton de java swing");
-            }
-        } else if (fieldView.isAnnotationPresent(ComboBoxView.class)) {
-            if (typeComponentView == JComboBox.class) {
-                ComboBoxView annotationComboBoxView = fieldView.getAnnotation(ComboBoxView.class);
-                JComboBox jCBcombo = (JComboBox) objectComponentView;
-                boolean required = annotationComboBoxView.required();
-                String requiredMessage = (annotationComboBoxView.requiredMessage() != null && !annotationComboBoxView.requiredMessage().isEmpty()) ? annotationComboBoxView.requiredMessage() : "El campo '" + nameComponentView + "' debe ser obligatorio";
-                
-                ComboBoxModel model = jCBcombo.getModel();
-                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
-                    //fieldModel.set(objectModelBean, model.getSelectedItem());
-                    Object value = model.getSelectedItem();
-                    methodSetFieldModel.invoke(objectModelBean, value);
-                    if (value == null && required) {
-                        NotifyUtils.showErrorAutoHide(null, "Valor Requerido", requiredMessage);
-                        this.failedValidation = true;
-                    }
-                }
-                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
-                    //model.setSelectedItem(fieldModel.get(objectModelBean));
-                    model.setSelectedItem(methodGetFieldModel.invoke(objectModelBean));
-                }
-            } else {
-                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo JComboBox de java swing");
-            }
-        } else if (fieldView.isAnnotationPresent(TableView.class)) {
-            if (typeComponentView == JTable.class) {
-                JTable jTable = (JTable) objectComponentView;
-                TableModelGeneric model = (TableModelGeneric) jTable.getModel();
-                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
-                    //fieldModel.set(objectModelBean, model.getListElements());
-                    methodSetFieldModel.invoke(objectModelBean, model.getListElements());
-                }
-                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
-                    //model.setListElements((List) fieldModel.get(objectModelBean));
-                    model.setListElements((List) methodGetFieldModel.invoke(objectModelBean));
-                    model.fireTableDataChanged();
-                }
-            } else {
-                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo Table de java swing");
-            }
-        } else if (fieldView.isAnnotationPresent(PaginatedTableView.class)) {
-            if (typeComponentView == PaginatedTable.class) {
-                PaginatedTable paginatedTable = (PaginatedTable) objectComponentView;
-                if (!paginatedTable.isLazy()) {
-                    PaginationDataProvider dataProvider = paginatedTable.getPaginationDataProvider();
-                    if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
-                        methodSetFieldModel.invoke(objectModelBean, dataProvider.getListData());
-                    }
-                    if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
-                        List listData = (List) methodGetFieldModel.invoke(objectModelBean);
-                        dataProvider.setListData(listData);
-                        dataProvider.setRowCount(listData.size());
-                        paginatedTable.resetPaginatedTable();
-                    }
-                }
-            } else {
-                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo PaginatedTable de SwingUtils");
-            }
-        } else {
-            // ComponentView
-            ComponentView annotationComponentView = fieldView.getAnnotation(ComponentView.class);
-            String nameProperty = annotationComponentView.nameProperty().trim();
-
-            for (Method m : typeComponentView.getMethods()) {
-
-                if (m.getName().equals("get" + StringUtils.capitalize(nameProperty))) {
-                    if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
-                        //fieldModel.set(objectModelBean, m.invoke(objectComponentView));
-                        methodSetFieldModel.invoke(objectModelBean, m.invoke(objectComponentView));
-                    }
-                }
-
-                if (m.getName().equals("set" + StringUtils.capitalize(nameProperty))) {
-                    if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
-                        //m.invoke(objectComponentView, fieldModel.get(objectModelBean));
-                        m.invoke(objectComponentView, methodGetFieldModel.invoke(objectModelBean));
-                    }
-                }
-            }
-        }
+//        if (fieldView.isAnnotationPresent(TextView.class)) {
+//            TextView annotationTextView = fieldView.getAnnotation(TextView.class);
+//            boolean required = annotationTextView.required();
+//            String requiredMessage = (annotationTextView.requiredMessage() != null && !annotationTextView.requiredMessage().isEmpty()) ? annotationTextView.requiredMessage() : "El campo '" + nameComponentView + "' debe contener un valor";
+//            
+//            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, null, null, required, requiredMessage, null);
+//
+//        } else if (fieldView.isAnnotationPresent(DateTextView.class)) {
+//            DateTextView annotationDateTextView = fieldView.getAnnotation(DateTextView.class);
+//            String pattern = annotationDateTextView.pattern();
+//            Locale locale = annotationDateTextView.locale() != null ? annotationDateTextView.locale().getLocale() : null;
+//            boolean required = annotationDateTextView.required();
+//            String requiredMessage = (annotationDateTextView.requiredMessage() != null && !annotationDateTextView.requiredMessage().isEmpty()) ? annotationDateTextView.requiredMessage() : "El campo '" + nameComponentView + "' debe contener un valor";
+//
+//            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, pattern, locale, required, requiredMessage, null);
+//
+//        } else if (fieldView.isAnnotationPresent(NumberTextView.class)) {
+//            NumberTextView annotationNumberTextView = fieldView.getAnnotation(NumberTextView.class);
+//            String pattern = annotationNumberTextView.pattern();
+//            Locale locale = annotationNumberTextView.locale() != null ? annotationNumberTextView.locale().getLocale() : null;
+//            boolean required = annotationNumberTextView.required();
+//            String requiredMessage = (annotationNumberTextView.requiredMessage() != null && !annotationNumberTextView.requiredMessage().isEmpty()) ? annotationNumberTextView.requiredMessage() : "El campo '" + nameComponentView + "' debe contener un valor";
+//
+//            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, pattern, locale, required, requiredMessage, null);
+//
+//        } else if (fieldView.isAnnotationPresent(PasswordTextView.class)) {
+//            PasswordTextView annotationPasswordTextView = fieldView.getAnnotation(PasswordTextView.class);
+//            boolean required = annotationPasswordTextView.required();
+//            String requiredMessage = (annotationPasswordTextView.requiredMessage() != null && !annotationPasswordTextView.requiredMessage().isEmpty()) ? annotationPasswordTextView.requiredMessage() : "El campo '" + nameComponentView + "' debe contener un valor";
+//            DigestEnum digest = annotationPasswordTextView.digest() != null ? annotationPasswordTextView.digest() : DigestEnum.EMPTY;
+//            
+//            updateGenericTextViewData(typeComponentView, objectComponentView, nameComponentView, fieldModel, typeFieldModel, methodSetFieldModel, methodGetFieldModel, objectModelBean, tipoUpdateEnum, null, null, required, requiredMessage, digest);
+//            
+//        } else if (fieldView.isAnnotationPresent(ToggleButtonView.class)) {
+//            if (JToggleButton.class.isAssignableFrom(typeComponentView)) {
+//                JToggleButton jToggleButton = (JToggleButton) objectComponentView;
+//                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
+//                    //fieldModel.set(objectModelBean, jToggleButton.isSelected());
+//                    methodSetFieldModel.invoke(objectModelBean, jToggleButton.isSelected());
+//                }
+//                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
+//                    if (typeFieldModel == Boolean.class || typeFieldModel == boolean.class) {
+//                        //Boolean bool = (Boolean) fieldModel.get(objectModelBean);
+//                        Boolean bool = (Boolean) methodGetFieldModel.invoke(objectModelBean);
+//                        jToggleButton.setSelected(bool != null ? bool : Boolean.FALSE);
+//                        for (ActionListener actionListener : jToggleButton.getActionListeners()) {
+//                            actionListener.actionPerformed(null);
+//                        }
+//                    } else {
+//                        throw new IllegalArgumentException("Atributo in Model " + fieldModel.getName() + " no es de tipo boolean");
+//                    }
+//                }
+//
+//            } else {
+//                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo JToggleButton de java swing");
+//            }
+//        } else if (fieldView.isAnnotationPresent(ComboBoxView.class)) {
+//            if (typeComponentView == JComboBox.class) {
+//                ComboBoxView annotationComboBoxView = fieldView.getAnnotation(ComboBoxView.class);
+//                JComboBox jCBcombo = (JComboBox) objectComponentView;
+//                boolean required = annotationComboBoxView.required();
+//                String requiredMessage = (annotationComboBoxView.requiredMessage() != null && !annotationComboBoxView.requiredMessage().isEmpty()) ? annotationComboBoxView.requiredMessage() : "El campo '" + nameComponentView + "' debe ser obligatorio";
+//                
+//                ComboBoxModel model = jCBcombo.getModel();
+//                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
+//                    //fieldModel.set(objectModelBean, model.getSelectedItem());
+//                    Object value = model.getSelectedItem();
+//                    methodSetFieldModel.invoke(objectModelBean, value);
+//                    if (value == null && required) {
+//                        NotifyUtils.showErrorAutoHide(null, "Valor Requerido", requiredMessage);
+//                        this.failedValidation = true;
+//                    }
+//                }
+//                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
+//                    //model.setSelectedItem(fieldModel.get(objectModelBean));
+//                    model.setSelectedItem(methodGetFieldModel.invoke(objectModelBean));
+//                }
+//            } else {
+//                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo JComboBox de java swing");
+//            }
+//        } else if (fieldView.isAnnotationPresent(TableView.class)) {
+//            if (typeComponentView == JTable.class) {
+//                JTable jTable = (JTable) objectComponentView;
+//                TableModelGeneric model = (TableModelGeneric) jTable.getModel();
+//                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
+//                    //fieldModel.set(objectModelBean, model.getListElements());
+//                    methodSetFieldModel.invoke(objectModelBean, model.getListElements());
+//                }
+//                if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
+//                    //model.setListElements((List) fieldModel.get(objectModelBean));
+//                    model.setListElements((List) methodGetFieldModel.invoke(objectModelBean));
+//                    model.fireTableDataChanged();
+//                }
+//            } else {
+//                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo Table de java swing");
+//            }
+//        } else if (fieldView.isAnnotationPresent(PaginatedTableView.class)) {
+//            if (typeComponentView == PaginatedTable.class) {
+//                PaginatedTable paginatedTable = (PaginatedTable) objectComponentView;
+//                if (!paginatedTable.isLazy()) {
+//                    PaginationDataProvider dataProvider = paginatedTable.getPaginationDataProvider();
+//                    if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
+//                        methodSetFieldModel.invoke(objectModelBean, dataProvider.getListData());
+//                    }
+//                    if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
+//                        List listData = (List) methodGetFieldModel.invoke(objectModelBean);
+//                        dataProvider.setListData(listData);
+//                        dataProvider.setRowCount(listData.size());
+//                        paginatedTable.resetPaginatedTable();
+//                    }
+//                }
+//            } else {
+//                throw new IllegalArgumentException("Component in View " + nameComponentView + " no es de tipo PaginatedTable de SwingUtils");
+//            }
+//        } else {
+//            // ComponentView
+//            ComponentView annotationComponentView = fieldView.getAnnotation(ComponentView.class);
+//            String nameProperty = annotationComponentView.nameProperty().trim();
+//
+//            for (Method m : typeComponentView.getMethods()) {
+//
+//                if (m.getName().equals("get" + StringUtils.capitalize(nameProperty))) {
+//                    if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.MODEL)) {
+//                        //fieldModel.set(objectModelBean, m.invoke(objectComponentView));
+//                        methodSetFieldModel.invoke(objectModelBean, m.invoke(objectComponentView));
+//                    }
+//                }
+//
+//                if (m.getName().equals("set" + StringUtils.capitalize(nameProperty))) {
+//                    if (Objects.equals(tipoUpdateEnum, TipoUpdateEnum.VIEW)) {
+//                        //m.invoke(objectComponentView, fieldModel.get(objectModelBean));
+//                        m.invoke(objectComponentView, methodGetFieldModel.invoke(objectModelBean));
+//                    }
+//                }
+//            }
+//        }
     }
     
     /**

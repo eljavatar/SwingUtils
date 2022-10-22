@@ -413,7 +413,7 @@ public class PaginatedTable<T> extends javax.swing.JPanel {
             setSortableColumns(sorter);
         }
         filters.clear();
-        if (globalFilter) {
+        if (Boolean.TRUE.equals(globalFilter)) {
             jCBcolumnFilter.setSelectedItem(null);
             jTFglobalFilter.setText(null);
         }

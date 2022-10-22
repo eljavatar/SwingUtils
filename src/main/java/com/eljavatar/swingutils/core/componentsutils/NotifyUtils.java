@@ -36,6 +36,7 @@ public class NotifyUtils {
                 .darkStyle()
                 .hideAfter(10000);
         
+        //ApplicationContext.getInstance().getListNotifyWarning().add(notifyWarning);
         notifyWarning.showWarning();
     }
     
@@ -48,6 +49,7 @@ public class NotifyUtils {
                 .darkStyle()
                 .hideAfter(10000);
         
+        //ApplicationContext.getInstance().getListNotifyError().add(notifyError);
         notifyError.showError();
     }
     
